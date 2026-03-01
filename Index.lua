@@ -21,8 +21,8 @@ local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footag
 
 local Window = WindUI:CreateWindow({
     Title = "Kzoyz HUB " .. getgenv().HubVersion,
-    Icon = "swords", 
-    Author = ".Koziz",
+    Icon = "worlds", 
+    Author = "Koziz",
     Folder = "KzoyzHub", 
     Size = UDim2.fromOffset(580, 460),
     Transparent = true,
@@ -71,7 +71,7 @@ end
 -- ========================================== --
 WindUI:Notify({ Title = "Kzoyz Hub", Content = "Memuat semua fitur di background...", Duration = 3 })
 
-AutoLoadTabFromGithub("Pabrik", "factory", "Pabrik (Factory)", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Pabrik.lua")
+AutoLoadTabFromGithub("PABRIK", "factory", "Pabrik (Factory)", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Pabrik.lua")
 AutoLoadTabFromGithub("Auto Farm", "sprout", "Semi Auto Farm", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Autofarm.lua")
 AutoLoadTabFromGithub("Manager", "briefcase", "Farming Manager", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Manager.lua")
 AutoLoadTabFromGithub("Auto PTHT", "tractor", "Plant & Harvest", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Autoplant.lua")
