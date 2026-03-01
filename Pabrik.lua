@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Pabrik v2.3 - WINDUI INPUT FIXED" 
+getgenv().ScriptVersion = "Pabrik v2.4 - WINDUI COLLAPSIBLE & INPUT FIXED" 
 
 -- ========================================== --
 -- [[ DEFAULT SETTINGS (ANTI-RESET) ]]
@@ -129,38 +129,60 @@ local function ScanAvailableItems()
 end
 
 -- ========================================== --
--- [[ WIND UI MAKER UNTUK TAB INI ]]
+-- [[ WIND UI MAKER DENGAN SISTEM SELIMUT ]]
 -- ========================================== --
 
-Tab:Section({ Title = "🚀 Smart Pabrik Control" })
+-- KONTROL UTAMA PABRIK (Terbuka dari awal)
+local SecControl = Tab:Section({ 
+    Title = "🚀 Smart Pabrik Control",
+    Box = true,
+    Opened = true -- Ini kebuka otomatis pas tab ditekan
+})
 
-Tab:Toggle({ Title = "▶ START SMART PABRIK", Default = getgenv().EnablePabrik, Callback = function(v) getgenv().EnablePabrik = v end })
-Tab:Toggle({ Title = "Auto Collect Sapling (Pas Break)", Default = getgenv().OnlyCollectSapling, Callback = function(v) getgenv().OnlyCollectSapling = v end })
+SecControl:Toggle({ Title = "▶ START SMART PABRIK", Default = getgenv().EnablePabrik, Callback = function(v) getgenv().EnablePabrik = v end })
+SecControl:Toggle({ Title = "Auto Collect Sapling (Pas Break)", Default = getgenv().OnlyCollectSapling, Callback = function(v) getgenv().OnlyCollectSapling = v end })
 
-local DropSeed = Tab:Dropdown({ Title = "🎒 Pilih Seed (Bibit)", Options = ScanAvailableItems(), Default = getgenv().SelectedSeed, Callback = function(v) getgenv().SelectedSeed = v end })
-local DropBlock = Tab:Dropdown({ Title = "🧱 Pilih Block (Untuk Dihancurkan)", Options = ScanAvailableItems(), Default = getgenv().SelectedBlock, Callback = function(v) getgenv().SelectedBlock = v end })
+local DropSeed = SecControl:Dropdown({ Title = "🎒 Pilih Seed (Bibit)", Options = ScanAvailableItems(), Default = getgenv().SelectedSeed, Callback = function(v) getgenv().SelectedSeed = v end })
+local DropBlock = SecControl:Dropdown({ Title = "🧱 Pilih Block (Untuk Dihancurkan)", Options = ScanAvailableItems(), Default = getgenv().SelectedBlock, Callback = function(v) getgenv().SelectedBlock = v end })
 
-Tab:Button({ Title = "🔄 Refresh Tas Item", Callback = function() pcall(function() local newItems = ScanAvailableItems(); DropSeed:Refresh(newItems); DropBlock:Refresh(newItems) end) end })
+SecControl:Button({ Title = "🔄 Refresh Tas Item", Callback = function() pcall(function() local newItems = ScanAvailableItems(); DropSeed:Refresh(newItems); DropBlock:Refresh(newItems) end) end })
 
-Tab:Section({ Title = "🗺️ Area Scan Setup (X & Y)" })
 
--- DI WINDUI KITA PAKAI 'Value' & 'PlaceholderText' BIAR ANGKA MUNCUL (BUKAN DEFAULT)
-Tab:Input({ Title = "Area Start X", Value = tostring(getgenv().PabrikStartX), PlaceholderText = tostring(getgenv().PabrikStartX), Callback = function(v) getgenv().PabrikStartX = tonumber(v) or getgenv().PabrikStartX end })
-Tab:Input({ Title = "Area End X", Value = tostring(getgenv().PabrikEndX), PlaceholderText = tostring(getgenv().PabrikEndX), Callback = function(v) getgenv().PabrikEndX = tonumber(v) or getgenv().PabrikEndX end })
-Tab:Input({ Title = "Area Start Y", Value = tostring(getgenv().PabrikStartY), PlaceholderText = tostring(getgenv().PabrikStartY), Callback = function(v) getgenv().PabrikStartY = tonumber(v) or getgenv().PabrikStartY end })
-Tab:Input({ Title = "Area End Y", Value = tostring(getgenv().PabrikEndY), PlaceholderText = tostring(getgenv().PabrikEndY), Callback = function(v) getgenv().PabrikEndY = tonumber(v) or getgenv().PabrikEndY end })
+-- AREA SCAN SETUP (Tertutup / Selimut)
+local SecArea = Tab:Section({ 
+    Title = "🗺️ Area Scan Setup (X & Y)",
+    Box = true,
+    Opened = false -- Ini tertutup (selimut)
+})
 
-Tab:Section({ Title = "⚙️ Threshold Settings (Batas Item)" })
-Tab:Input({ Title = "Block Threshold (Sisa di tas)", Value = tostring(getgenv().BlockThreshold), PlaceholderText = tostring(getgenv().BlockThreshold), Callback = function(v) getgenv().BlockThreshold = tonumber(v) or getgenv().BlockThreshold end })
-Tab:Input({ Title = "Keep Seed Amt (Sisa di tas)", Value = tostring(getgenv().KeepSeedAmt), PlaceholderText = tostring(getgenv().KeepSeedAmt), Callback = function(v) getgenv().KeepSeedAmt = tonumber(v) or getgenv().KeepSeedAmt end })
+SecArea:Input({ Title = "Area Start X", Value = tostring(getgenv().PabrikStartX), Placeholder = tostring(getgenv().PabrikStartX), Callback = function(v) getgenv().PabrikStartX = tonumber(v) or getgenv().PabrikStartX end })
+SecArea:Input({ Title = "Area End X", Value = tostring(getgenv().PabrikEndX), Placeholder = tostring(getgenv().PabrikEndX), Callback = function(v) getgenv().PabrikEndX = tonumber(v) or getgenv().PabrikEndX end })
+SecArea:Input({ Title = "Area Start Y", Value = tostring(getgenv().PabrikStartY), Placeholder = tostring(getgenv().PabrikStartY), Callback = function(v) getgenv().PabrikStartY = tonumber(v) or getgenv().PabrikStartY end })
+SecArea:Input({ Title = "Area End Y", Value = tostring(getgenv().PabrikEndY), Placeholder = tostring(getgenv().PabrikEndY), Callback = function(v) getgenv().PabrikEndY = tonumber(v) or getgenv().PabrikEndY end })
 
-Tab:Section({ Title = "📍 Posisi Break & Drop" })
 
--- SIMPAN INPUT KE VARIABEL BIAR BISA DIUBAH DARI TOMBOL
-local InpBreakX = Tab:Input({ Title = "Break Pos X", Value = tostring(getgenv().BreakPosX), PlaceholderText = tostring(getgenv().BreakPosX), Callback = function(v) getgenv().BreakPosX = tonumber(v) or getgenv().BreakPosX end })
-local InpBreakY = Tab:Input({ Title = "Break Pos Y", Value = tostring(getgenv().BreakPosY), PlaceholderText = tostring(getgenv().BreakPosY), Callback = function(v) getgenv().BreakPosY = tonumber(v) or getgenv().BreakPosY end })
+-- THRESHOLD SETTINGS (Tertutup / Selimut)
+local SecThresh = Tab:Section({ 
+    Title = "⚙️ Threshold Settings (Batas Item)",
+    Box = true,
+    Opened = false
+})
 
-Tab:Button({
+SecThresh:Input({ Title = "Block Threshold (Sisa di tas)", Value = tostring(getgenv().BlockThreshold), Placeholder = tostring(getgenv().BlockThreshold), Callback = function(v) getgenv().BlockThreshold = tonumber(v) or getgenv().BlockThreshold end })
+SecThresh:Input({ Title = "Keep Seed Amt (Sisa di tas)", Value = tostring(getgenv().KeepSeedAmt), Placeholder = tostring(getgenv().KeepSeedAmt), Callback = function(v) getgenv().KeepSeedAmt = tonumber(v) or getgenv().KeepSeedAmt end })
+
+
+-- POSISI BREAK & DROP (Tertutup / Selimut)
+local SecPos = Tab:Section({ 
+    Title = "📍 Posisi Break & Drop",
+    Box = true,
+    Opened = false
+})
+
+local InpBreakX = SecPos:Input({ Title = "Break Pos X", Value = tostring(getgenv().BreakPosX), Placeholder = tostring(getgenv().BreakPosX), Callback = function(v) getgenv().BreakPosX = tonumber(v) or getgenv().BreakPosX end })
+local InpBreakY = SecPos:Input({ Title = "Break Pos Y", Value = tostring(getgenv().BreakPosY), Placeholder = tostring(getgenv().BreakPosY), Callback = function(v) getgenv().BreakPosY = tonumber(v) or getgenv().BreakPosY end })
+
+SecPos:Button({
     Title = "📍 Set Break Pos (Posisi Kamu Saat Ini)",
     Callback = function() 
         local H = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) 
@@ -169,19 +191,16 @@ Tab:Button({
             local newY = math.floor(H.Position.Y/4.5+0.5)
             getgenv().BreakPosX = newX
             getgenv().BreakPosY = newY
-            -- UPDATE TEKS UI OTOMATIS
-            pcall(function() InpBreakX:SetValue(tostring(newX)) end)
-            pcall(function() InpBreakX:Set(tostring(newX)) end)
-            pcall(function() InpBreakY:SetValue(tostring(newY)) end)
+            pcall(function() InpBreakX:Set(tostring(newX)) end) -- Otomatis update angka di layar
             pcall(function() InpBreakY:Set(tostring(newY)) end)
         end 
     end
 })
 
-local InpDropX = Tab:Input({ Title = "Drop Pos X", Value = tostring(getgenv().DropPosX), PlaceholderText = tostring(getgenv().DropPosX), Callback = function(v) getgenv().DropPosX = tonumber(v) or getgenv().DropPosX end })
-local InpDropY = Tab:Input({ Title = "Drop Pos Y", Value = tostring(getgenv().DropPosY), PlaceholderText = tostring(getgenv().DropPosY), Callback = function(v) getgenv().DropPosY = tonumber(v) or getgenv().DropPosY end })
+local InpDropX = SecPos:Input({ Title = "Drop Pos X", Value = tostring(getgenv().DropPosX), Placeholder = tostring(getgenv().DropPosX), Callback = function(v) getgenv().DropPosX = tonumber(v) or getgenv().DropPosX end })
+local InpDropY = SecPos:Input({ Title = "Drop Pos Y", Value = tostring(getgenv().DropPosY), Placeholder = tostring(getgenv().DropPosY), Callback = function(v) getgenv().DropPosY = tonumber(v) or getgenv().DropPosY end })
 
-Tab:Button({
+SecPos:Button({
     Title = "📍 Set Drop Pos (Posisi Kamu Saat Ini)",
     Callback = function() 
         local H = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) 
@@ -190,21 +209,24 @@ Tab:Button({
             local newY = math.floor(H.Position.Y/4.5+0.5)
             getgenv().DropPosX = newX
             getgenv().DropPosY = newY
-            -- UPDATE TEKS UI OTOMATIS
-            pcall(function() InpDropX:SetValue(tostring(newX)) end)
-            pcall(function() InpDropX:Set(tostring(newX)) end)
-            pcall(function() InpDropY:SetValue(tostring(newY)) end)
+            pcall(function() InpDropX:Set(tostring(newX)) end) -- Otomatis update angka di layar
             pcall(function() InpDropY:Set(tostring(newY)) end)
         end 
     end
 })
 
-Tab:Section({ Title = "⏱️ Kecepatan & Delay" })
 
-Tab:Input({ Title = "Walk Speed", Value = tostring(getgenv().WalkSpeed), PlaceholderText = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
-Tab:Input({ Title = "Place Delay (ms)", Value = tostring(getgenv().PlaceDelay), PlaceholderText = tostring(getgenv().PlaceDelay), Callback = function(v) getgenv().PlaceDelay = tonumber(v) or getgenv().PlaceDelay end })
-Tab:Input({ Title = "Break Delay (ms)", Value = tostring(getgenv().BreakDelay), PlaceholderText = tostring(getgenv().BreakDelay), Callback = function(v) getgenv().BreakDelay = tonumber(v) or getgenv().BreakDelay end })
-Tab:Input({ Title = "Hit Count (Pukulan per Block)", Value = tostring(getgenv().HitCount), PlaceholderText = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
+-- SETTING KECEPATAN (Tertutup / Selimut)
+local SecSpeed = Tab:Section({ 
+    Title = "⏱️ Kecepatan & Delay",
+    Box = true,
+    Opened = false
+})
+
+SecSpeed:Input({ Title = "Walk Speed", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
+SecSpeed:Input({ Title = "Place Delay (ms)", Value = tostring(getgenv().PlaceDelay), Placeholder = tostring(getgenv().PlaceDelay), Callback = function(v) getgenv().PlaceDelay = tonumber(v) or getgenv().PlaceDelay end })
+SecSpeed:Input({ Title = "Break Delay (ms)", Value = tostring(getgenv().BreakDelay), Placeholder = tostring(getgenv().BreakDelay), Callback = function(v) getgenv().BreakDelay = tonumber(v) or getgenv().BreakDelay end })
+SecSpeed:Input({ Title = "Hit Count (Pukulan per Block)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
 
 
 -- ========================================== --
