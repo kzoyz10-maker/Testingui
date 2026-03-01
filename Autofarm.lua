@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v9.20 (WINDUI + GLITCH FIXED)" 
+getgenv().ScriptVersion = "Auto Farm v9.50 (WINDUI + TRUE GHOST & ANTI-GLITCH)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -36,6 +36,9 @@ getgenv().TargetSaplingName = getgenv().TargetSaplingName or "Kosong"
 getgenv().SelectedTiles = getgenv().SelectedTiles or {{x = 0, y = 1}}
 getgenv().DropTargetX = getgenv().DropTargetX or nil
 getgenv().DropTargetY = getgenv().DropTargetY or nil
+
+getgenv().IsGhosting = false
+getgenv().HoldCFrame = nil
 
 local PlayerMovement
 task.spawn(function() pcall(function() PlayerMovement = require(LP.PlayerScripts:WaitForChild("PlayerMovement")) end) end)
@@ -129,8 +132,7 @@ end
 -- [[ ========================================================= ]] --
 -- [[ WINDUI SECTIONS ]]
 -- [[ ========================================================= ]] --
-
-local SecFarm = Tab:Section({ Title = "Master Auto Farm", Box = true, Opened = true })
+local SecFarm = Tab:Section({ Title = "🚜 Master Auto Farm", Box = true, Opened = true })
 SecFarm:Toggle({ Title = "▶ START AUTO FARM", Default = getgenv().MasterAutoFarm, Callback = function(v) getgenv().MasterAutoFarm = v end })
 local function GetBlockOptions() local opts = {"Auto (Equipped)"}; for _, item in ipairs(ScanAvailableItems()) do table.insert(opts, item) end; return opts end
 local DropFarmBlock = SecFarm:Dropdown({ Title = "🎯 Target Farm Block", Options = GetBlockOptions(), Default = getgenv().TargetFarmBlock, Callback = function(v) getgenv().TargetFarmBlock = v end })
@@ -178,11 +180,19 @@ local RemotePlace = Remotes:WaitForChild("PlayerPlaceItem")
 local RemoteBreak = Remotes:WaitForChild("PlayerFist")
 local RemoteDrop = Remotes:WaitForChild("PlayerDrop")
 
--- Heartbeat SEKARANG BERSIH! Gak ada lagi lock CFrame/IsGhosting yang bikin karakter nyangkut
+-- GHOSTING HEARTBEAT: KUNCI BADAN BIAR GAK KETARIK FISIKA GAME
 getgenv().KzoyzHeartbeat = RunService.Heartbeat:Connect(function()
     if getgenv().AutoCollect then
         local highlights = workspace:FindFirstChild("TileHighligts") or workspace:FindFirstChild("TileHighlights")
         if highlights then pcall(function() highlights:ClearAllChildren() end) end
+    end
+    -- INI YANG BIKIN JALAN LU GAK NGE-DRIFT KE KIRI
+    if getgenv().IsGhosting then
+        if getgenv().HoldCFrame then
+            local char = LP.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then char.HumanoidRootPart.CFrame = getgenv().HoldCFrame end
+        end
+        if PlayerMovement then pcall(function() PlayerMovement.VelocityY = 0; PlayerMovement.VelocityX = 0; PlayerMovement.VelocityZ = 0; PlayerMovement.Grounded = true; PlayerMovement.Jumping = false end) end
     end
 end)
 
@@ -227,22 +237,16 @@ local function CheckDropsAtGrid(TargetGridX, TargetGridY)
 end
 
 -- ==============================================================
--- PURE SMOOTH WALKTO: BEBAS GLITCH & SINKRON SAMA HRP
+-- PURE SMOOTH WALKTO: BEBAS GLITCH
 -- ==============================================================
 local function SmoothWalkTo(targetVec3)
-    local char = LP.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local MyHitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name)
+    local HitboxFolder = workspace:FindFirstChild("Hitbox")
+    local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
+    if not MyHitbox then return false end
     
-    if not hrp then return false end
-    
-    local startPos = hrp.Position
+    local startPos = MyHitbox.Position
     local dist = (Vector2.new(startPos.X, startPos.Y) - Vector2.new(targetVec3.X, targetVec3.Y)).Magnitude 
     local duration = dist / getgenv().WalkSpeed
-    
-    -- Kunci physics sementara biar karakter gak ditarik sama sistem game pas lagi jalan otomatis
-    hrp.Anchored = true
-    if MyHitbox then MyHitbox.Anchored = true end
     
     if duration > 0 then 
         local t = 0
@@ -252,19 +256,13 @@ local function SmoothWalkTo(targetVec3)
             local alpha = math.clamp(t / duration, 0, 1)
             local currentPos = startPos:Lerp(targetVec3, alpha)
             
-            hrp.CFrame = CFrame.new(currentPos)
-            if MyHitbox then MyHitbox.CFrame = CFrame.new(currentPos) end
-            if PlayerMovement then pcall(function() PlayerMovement.Position = currentPos; PlayerMovement.VelocityX = 0; PlayerMovement.VelocityY = 0 end) end
+            MyHitbox.CFrame = CFrame.new(currentPos)
+            if PlayerMovement then pcall(function() PlayerMovement.Position = currentPos end) end
         end
     end
     
-    hrp.CFrame = CFrame.new(targetVec3)
-    if MyHitbox then MyHitbox.CFrame = CFrame.new(targetVec3) end
+    MyHitbox.CFrame = CFrame.new(targetVec3)
     if PlayerMovement then pcall(function() PlayerMovement.Position = targetVec3 end) end
-    
-    -- Lepas kunci
-    hrp.Anchored = false
-    if MyHitbox then MyHitbox.Anchored = false end
     task.wait(0.01)
     return true
 end
@@ -281,7 +279,7 @@ local function FindEmptyGridNearPlayer(BaseX, BaseY)
 end
 
 -- ==============================================================
--- MAIN FARM LOOP
+-- MAIN FARM LOOP (TRUE GHOST COLLECT)
 -- ==============================================================
 getgenv().KzoyzFarmLoop = task.spawn(function() 
     while true do 
@@ -331,9 +329,26 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     if #TilesToCollect > 0 and getgenv().MasterAutoFarm then
                         local char = LP.Character
                         local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                        local currZ = hrp and hrp.Position.Z or 0
+                        local hum = char and char:FindFirstChildOfClass("Humanoid")
+                        local HitboxFolder = workspace:FindFirstChild("Hitbox")
+                        local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
                         
-                        -- LOOP COLLECT MULUS
+                        local ExactHrpCF = hrp and hrp.CFrame
+                        local ExactHitboxCF = MyHitbox and MyHitbox.CFrame
+                        local ExactPMPos = nil
+                        if PlayerMovement then pcall(function() ExactPMPos = PlayerMovement.Position end) end
+                        
+                        -- NYALAKAN GHOSTING: BADAN KUNCI DI TEMPAT, HITBOX BEBAS GERAK
+                        if hrp then getgenv().HoldCFrame = ExactHrpCF; hrp.Anchored = true; getgenv().IsGhosting = true end
+                        if hum then
+                            local animator = hum:FindFirstChildOfClass("Animator")
+                            local tracks = animator and animator:GetPlayingAnimationTracks() or hum:GetPlayingAnimationTracks()
+                            for _, track in ipairs(tracks) do track:Stop(0) end
+                        end
+                        
+                        local currZ = MyHitbox and MyHitbox.Position.Z or ExactHrpCF.Z
+                        
+                        -- LOOP LERP HITBOX
                         for _, tile in ipairs(TilesToCollect) do
                             if not getgenv().MasterAutoFarm then break end
                             local targetVec = Vector3.new(tile.x * getgenv().GridSize, tile.y * getgenv().GridSize, currZ)
@@ -344,9 +359,21 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         end
                         
                         task.wait(0.1)
-                        -- BALIK KE BASE MULUS
+                        -- BALIK KE BASE
                         local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
                         SmoothWalkTo(baseVec) 
+                        
+                        -- MATIKAN GHOSTING & RESTORE PHYSICS
+                        if hrp and ExactHrpCF then 
+                            hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
+                            if MyHitbox and ExactHitboxCF then MyHitbox.CFrame = ExactHitboxCF; MyHitbox.AssemblyLinearVelocity = Vector3.zero end
+                            hrp.CFrame = ExactHrpCF
+                            if PlayerMovement and ExactPMPos then pcall(function() PlayerMovement.Position = ExactPMPos; PlayerMovement.OldPosition = ExactPMPos; PlayerMovement.VelocityX = 0; PlayerMovement.VelocityY = 0; PlayerMovement.VelocityZ = 0; PlayerMovement.Grounded = true end) end
+                            RunService.Heartbeat:Wait(); RunService.Heartbeat:Wait()
+                            hrp.Anchored = false 
+                            for _ = 1, 2 do if PlayerMovement and ExactPMPos then pcall(function() PlayerMovement.Position = ExactPMPos; PlayerMovement.OldPosition = ExactPMPos; PlayerMovement.VelocityY = 0; PlayerMovement.Grounded = true end) end; RunService.Heartbeat:Wait() end
+                        end
+                        getgenv().IsGhosting = false 
                     end
                 end
                 
@@ -364,9 +391,18 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         
                         local char = LP.Character
                         local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                        local currZ = hrp and hrp.Position.Z or 0
+                        local HitboxFolder = workspace:FindFirstChild("Hitbox")
+                        local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
                         
-                        -- JALAN MULUS KE TEMPAT DROP
+                        local ExactHrpCF = hrp and hrp.CFrame
+                        local ExactHitboxCF = MyHitbox and MyHitbox.CFrame
+                        local ExactPMPos = nil
+                        if PlayerMovement then pcall(function() ExactPMPos = PlayerMovement.Position end) end
+
+                        -- NYALAKAN GHOSTING UNTUK DROP
+                        if hrp then getgenv().HoldCFrame = ExactHrpCF; hrp.Anchored = true; getgenv().IsGhosting = true end
+                        
+                        local currZ = MyHitbox and MyHitbox.Position.Z or ExactHrpCF.Z
                         local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
                         SmoothWalkTo(dropVec) 
                         task.wait(0.2)
@@ -388,9 +424,18 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         end)
                         
                         task.wait(0.5)
-                        -- BALIK KE BASE MULUS
                         local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
                         SmoothWalkTo(baseVec) 
+                        
+                        -- MATIKAN GHOSTING
+                        if hrp and ExactHrpCF then 
+                            hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
+                            if MyHitbox and ExactHitboxCF then MyHitbox.CFrame = ExactHitboxCF; MyHitbox.AssemblyLinearVelocity = Vector3.zero end
+                            hrp.CFrame = ExactHrpCF
+                            if PlayerMovement and ExactPMPos then pcall(function() PlayerMovement.Position = ExactPMPos; PlayerMovement.OldPosition = ExactPMPos; PlayerMovement.VelocityY = 0; PlayerMovement.Grounded = true end) end
+                            RunService.Heartbeat:Wait(); hrp.Anchored = false 
+                        end
+                        getgenv().IsGhosting = false 
                     end
                 end
 
