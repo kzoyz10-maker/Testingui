@@ -139,7 +139,7 @@ local DropFarmBlock = SecFarm:Dropdown({ Title = "🎯 Target Farm Block", Optio
 SecFarm:Button({ Title = "🔄 Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
 SecFarm:Button({ Title = "📝 Select Farm Tiles (Grid Area)", Callback = function() OpenTileSelectorModal() end })
 
-local SecCollect = Tab:Section({ Title = "🧲 Auto Collect Settings", Box = true, Opened = false })
+local SecCollect = Tab:Section({ Title = "hbbuto Collect Settings", Box = true, Opened = false })
 SecCollect:Toggle({ Title = "Enable Auto Collect", Default = getgenv().AutoCollect, Callback = function(v) getgenv().AutoCollect = v end })
 SecCollect:Toggle({ Title = "Only Collect Sapling", Default = getgenv().AutoSaplingMode, Callback = function(v) getgenv().AutoSaplingMode = v end })
 
