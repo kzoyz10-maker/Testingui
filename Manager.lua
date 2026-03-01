@@ -109,7 +109,6 @@ local ChatRemote = RS:WaitForChild("CB")
 local SecPlayer = Tab:Section({ Title = "🛡️ Player Control & Security", Box = true, Opened = true })
 
 SecPlayer:Toggle({ Title = "🧲 Auto Pull Players (World)", Default = getgenv().AutoPull, Callback = function(v) getgenv().AutoPull = v; if not v then ForceRestoreUI() end end })
-SecPlayer:Toggle({ Title = "🔨 Auto Ban Players (World)", Default = getgenv().AutoBan, Callback = function(v) getgenv().AutoBan = v; if not v then ForceRestoreUI() end end })
 SecPlayer:Toggle({ Title = "🛡️ Enable Anti-Staff (Auto Disconnect)", Default = getgenv().AntiStaff, Callback = function(v) getgenv().AntiStaff = v end })
 
 -- SECTION: CAMERA
