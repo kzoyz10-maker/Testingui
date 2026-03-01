@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Pabrik v2.1 - WINDUI FIXED" 
+getgenv().ScriptVersion = "Pabrik v2.2 - WINDUI SECTIONS" 
 
 -- ========================================== --
 -- [[ DEFAULT SETTINGS (ANTI-RESET) ]]
@@ -132,10 +132,11 @@ end
 -- [[ WIND UI MAKER UNTUK TAB INI ]]
 -- ========================================== --
 
-Tab:Section({ Title = "🚀 Smart Pabrik Control" })
+-- SECTION 1: KONTROL UTAMA PABRIK
+Tab:Section({ Title = "Pabrik Control" })
 
 Tab:Toggle({
-    Title = "START SMART PABRIK",
+    Title = "START PABRIK",
     Default = getgenv().EnablePabrik,
     Callback = function(value) getgenv().EnablePabrik = value end
 })
@@ -147,21 +148,21 @@ Tab:Toggle({
 })
 
 local DropSeed = Tab:Dropdown({
-    Title = "Pilih Seed",
+    Title = "Sapling",
     Options = ScanAvailableItems(),
     Default = getgenv().SelectedSeed,
     Callback = function(value) getgenv().SelectedSeed = value end
 })
 
 local DropBlock = Tab:Dropdown({
-    Title = "Pilih Block",
+    Title = "Block",
     Options = ScanAvailableItems(),
     Default = getgenv().SelectedBlock,
     Callback = function(value) getgenv().SelectedBlock = value end
 })
 
 Tab:Button({
-    Title = "Refresh Tas Item",
+    Title = "Refresh Items",
     Callback = function() 
         pcall(function()
             local newItems = ScanAvailableItems()
@@ -171,24 +172,27 @@ Tab:Button({
     end
 })
 
-Tab:Section({ Title = "🗺️ Area Scan Setup" })
+-- SECTION 2: PENGATURAN AREA PABRIK
+Tab:Section({ Title = "Scan Setup" })
 
 Tab:Input({ Title = "Area Start X", Default = tostring(getgenv().PabrikStartX), Callback = function(v) getgenv().PabrikStartX = tonumber(v) or 0 end })
 Tab:Input({ Title = "Area End X", Default = tostring(getgenv().PabrikEndX), Callback = function(v) getgenv().PabrikEndX = tonumber(v) or 100 end })
 Tab:Input({ Title = "Area Start Y", Default = tostring(getgenv().PabrikStartY), Callback = function(v) getgenv().PabrikStartY = tonumber(v) or 0 end })
 Tab:Input({ Title = "Area End Y", Default = tostring(getgenv().PabrikEndY), Callback = function(v) getgenv().PabrikEndY = tonumber(v) or 100 end })
 
-Tab:Section({ Title = "⚙️ Threshold Settings" })
+-- SECTION 3: BATAS ITEM (THRESHOLD)
+Tab:Section({ Title = "Threshold Settings" })
 
 Tab:Input({ Title = "Block Threshold (Sisa di tas)", Default = tostring(getgenv().BlockThreshold), Callback = function(v) getgenv().BlockThreshold = tonumber(v) or 20 end })
 Tab:Input({ Title = "Keep Seed Amt (Sisa di tas)", Default = tostring(getgenv().KeepSeedAmt), Callback = function(v) getgenv().KeepSeedAmt = tonumber(v) or 20 end })
 
-Tab:Section({ Title = "📍 Posisi Break & Drop" })
+-- SECTION 4: KOORDINAT LOKASI
+Tab:Section({ Title = " Posisi Break & Drop" })
 
 Tab:Input({ Title = "Break Pos X", Default = tostring(getgenv().BreakPosX), Callback = function(v) getgenv().BreakPosX = tonumber(v) or 0 end })
 Tab:Input({ Title = "Break Pos Y", Default = tostring(getgenv().BreakPosY), Callback = function(v) getgenv().BreakPosY = tonumber(v) or 0 end })
 Tab:Button({
-    Title = "Set Break Pos (Current Loc)",
+    Title = " Set Break Pos (Posisi Kamu Saat Ini)",
     Callback = function() 
         local H = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) 
         if H then 
@@ -201,7 +205,7 @@ Tab:Button({
 Tab:Input({ Title = "Drop Pos X", Default = tostring(getgenv().DropPosX), Callback = function(v) getgenv().DropPosX = tonumber(v) or 0 end })
 Tab:Input({ Title = "Drop Pos Y", Default = tostring(getgenv().DropPosY), Callback = function(v) getgenv().DropPosY = tonumber(v) or 0 end })
 Tab:Button({
-    Title = "Set Drop Pos (Current Loc)",
+    Title = " Set Drop Pos (Posisi Kamu Saat Ini)",
     Callback = function() 
         local H = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) 
         if H then 
@@ -211,12 +215,13 @@ Tab:Button({
     end
 })
 
-Tab:Section({ Title = "⏱️ Kecepatan & Delay" })
+-- SECTION 5: PENGATURAN WAKTU & KECEPATAN
+Tab:Section({ Title = " Kecepatan & Delay" })
 
 Tab:Input({ Title = "Walk Speed", Default = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or 16 end })
 Tab:Input({ Title = "Place Delay (ms)", Default = tostring(getgenv().PlaceDelay), Callback = function(v) getgenv().PlaceDelay = tonumber(v) or 0.15 end })
 Tab:Input({ Title = "Break Delay (ms)", Default = tostring(getgenv().BreakDelay), Callback = function(v) getgenv().BreakDelay = tonumber(v) or 0.15 end })
-Tab:Input({ Title = "Hit Count (Pukulan)", Default = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or 3 end })
+Tab:Input({ Title = "Hit Count (Pukulan per Block)", Default = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or 3 end })
 
 
 -- ========================================== --
