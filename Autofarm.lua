@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v9.00 (WINDUI + SMOOTH COLLECT)" 
+getgenv().ScriptVersion = "Auto Farm v9.10 (WINDUI + PURE SMOOTH WALK)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -26,7 +26,9 @@ getgenv().AutoSaplingMode = getgenv().AutoSaplingMode or false;
 getgenv().HitCount = getgenv().HitCount or 3;
 getgenv().BreakDelayMs = getgenv().BreakDelayMs or 150; 
 getgenv().WaitDropMs = getgenv().WaitDropMs or 250;  
-getgenv().WalkSpeedMs = getgenv().WalkSpeedMs or 100;
+
+-- Ganti dari "WalkSpeedMs" (sistem grid) jadi WalkSpeed murni!
+getgenv().WalkSpeed = getgenv().WalkSpeed or 16;
 
 getgenv().TargetFarmBlock = getgenv().TargetFarmBlock or "Auto (Equipped)"
 getgenv().AutoDropSapling = getgenv().AutoDropSapling or false
@@ -162,7 +164,7 @@ SecCollect:Toggle({ Title = "Only Collect Sapling", Default = getgenv().AutoSapl
 -- 3. SECTION SPEED & DELAY
 local SecSpeed = Tab:Section({ Title = "⏱️ Delay & Speeds", Box = true, Opened = false })
 SecSpeed:Input({ Title = "Delay Collect (ms)", Value = tostring(getgenv().WaitDropMs), Placeholder = tostring(getgenv().WaitDropMs), Callback = function(v) getgenv().WaitDropMs = tonumber(v) or getgenv().WaitDropMs end })
-SecSpeed:Input({ Title = "Collect Speed (ms per block)", Value = tostring(getgenv().WalkSpeedMs), Placeholder = tostring(getgenv().WalkSpeedMs), Callback = function(v) getgenv().WalkSpeedMs = tonumber(v) or getgenv().WalkSpeedMs end })
+SecSpeed:Input({ Title = "Walk Speed (Move to Collect)", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
 SecSpeed:Input({ Title = "Break Delay (ms)", Value = tostring(getgenv().BreakDelayMs), Placeholder = tostring(getgenv().BreakDelayMs), Callback = function(v) getgenv().BreakDelayMs = tonumber(v) or getgenv().BreakDelayMs end })
 SecSpeed:Input({ Title = "Hit Count (Pukulan per blok)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
 
@@ -265,35 +267,25 @@ local function CheckDropsAtGrid(TargetGridX, TargetGridY)
     if getgenv().AutoSaplingMode then return foundSapling else return foundAny end
 end
 
--- FIXED BUGS: Menggunakan Lerp agar movement sangat smooth dan tidak ngeblink kiri-kanan
-local function WalkGridSmooth(TargetX, TargetY)
+-- ==============================================================
+-- PURE SMOOTH WALKTO: Bikin jalan super lurus & mulus (Bukan grid)
+-- ==============================================================
+local function SmoothWalkTo(targetPos)
     local HitboxFolder = workspace:FindFirstChild("Hitbox")
-    local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
-    if not MyHitbox then return end
+    local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
+    if not MyHitbox then return false end
     
     local startPos = MyHitbox.Position
-    local startZ = startPos.Z
-    local startGridX = math.floor(startPos.X / getgenv().GridSize + 0.5)
-    local startGridY = math.floor(startPos.Y / getgenv().GridSize + 0.5)
+    local dist = (Vector2.new(startPos.X, startPos.Y) - Vector2.new(targetPos.X, targetPos.Y)).Magnitude 
+    local duration = dist / getgenv().WalkSpeed
     
-    if startGridX == TargetX and startGridY == TargetY then return end -- Sudah di posisi
-
-    local targetPos = Vector3.new(TargetX * getgenv().GridSize, TargetY * getgenv().GridSize, startZ)
-    
-    -- Hitung jarak blok (X & Y) buat dapet total durasi animasi yang akurat
-    local distanceBlocks = math.abs(TargetX - startGridX) + math.abs(TargetY - startGridY)
-    if distanceBlocks == 0 then distanceBlocks = 1 end
-    
-    -- Durasi total = jumlah blok x kecepatan input dari UI
-    local duration = distanceBlocks * (getgenv().WalkSpeedMs / 1000)
-    
-    if duration > 0 then
+    if duration > 0 then 
         local t = 0
         while t < duration and getgenv().MasterAutoFarm do
             local dt = RunService.Heartbeat:Wait()
             t = t + dt
             local alpha = math.clamp(t / duration, 0, 1)
-            local currentPos = startPos:Lerp(targetPos, alpha) -- LERP BIKIN JALANNYA MULUS
+            local currentPos = startPos:Lerp(targetPos, alpha)
             
             MyHitbox.CFrame = CFrame.new(currentPos)
             if PlayerMovement then pcall(function() PlayerMovement.Position = currentPos end) end
@@ -303,6 +295,7 @@ local function WalkGridSmooth(TargetX, TargetY)
     MyHitbox.CFrame = CFrame.new(targetPos)
     if PlayerMovement then pcall(function() PlayerMovement.Position = targetPos end) end
     task.wait(0.01)
+    return true
 end
 
 local function FindEmptyGridNearPlayer(BaseX, BaseY)
@@ -381,15 +374,20 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                             for _, track in ipairs(tracks) do track:Stop(0) end
                         end
                         
+                        -- LOOP COLLECT MULUS
+                        local currZ = MyHitbox and MyHitbox.Position.Z or ExactHrpCF.Z
                         for _, tile in ipairs(TilesToCollect) do
                             if not getgenv().MasterAutoFarm then break end
-                            WalkGridSmooth(tile.x, tile.y) -- JALAN MULUS KE TILE DROPAN
+                            local targetVec = Vector3.new(tile.x * getgenv().GridSize, tile.y * getgenv().GridSize, currZ)
+                            SmoothWalkTo(targetVec) 
                             
                             local waitTimeout = 0
                             while CheckDropsAtGrid(tile.x, tile.y) and waitTimeout < 15 and getgenv().MasterAutoFarm do task.wait(0.1); waitTimeout = waitTimeout + 1 end
                         end
                         
-                        task.wait(0.1); WalkGridSmooth(BaseX, BaseY) -- KEMBALI KE BASE DENGAN MULUS
+                        task.wait(0.1)
+                        local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
+                        SmoothWalkTo(baseVec) -- KEMBALI KE BASE DENGAN MULUS
                         
                         if hrp and ExactHrpCF then 
                             hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
@@ -404,7 +402,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     end
                 end
                 
-                -- [[ LOGIC AUTO DROP (UPDATE POSISI) ]]
+                -- [[ LOGIC AUTO DROP (UPDATE POSISI MULUS) ]]
                 if getgenv().AutoDropSapling and getgenv().TargetSaplingName ~= "Kosong" then
                     local sapSlot = GetSlotByItemID(getgenv().TargetSaplingName)
                     local sapAmount = GetItemAmountByID(getgenv().TargetSaplingName)
@@ -429,7 +427,9 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
 
                         if hrp then getgenv().HoldCFrame = ExactHrpCF; hrp.Anchored = true; getgenv().IsGhosting = true end
                         
-                        WalkGridSmooth(dropX, dropY) -- JALAN MULUS KE TEMPAT DROP SEED
+                        local currZ = MyHitbox and MyHitbox.Position.Z or ExactHrpCF.Z
+                        local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
+                        SmoothWalkTo(dropVec) -- JALAN MULUS KE TEMPAT DROP SEED
                         task.wait(0.2)
                         
                         pcall(function() RemoteDrop:FireServer(sapSlot, sapAmount) end)
@@ -449,7 +449,9 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                             end
                         end)
                         
-                        task.wait(0.5); WalkGridSmooth(BaseX, BaseY) -- KEMBALI KE BASE DENGAN MULUS
+                        task.wait(0.5)
+                        local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
+                        SmoothWalkTo(baseVec) -- KEMBALI KE BASE DENGAN MULUS
                         
                         if hrp and ExactHrpCF then 
                             hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
