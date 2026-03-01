@@ -1,11 +1,12 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v11.0 (PURE REAL WALK FIX)" 
+getgenv().ScriptVersion = "Auto Farm v12.0 (LOGIKA AI TEMAN + WINDUI)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 -- [[ ========================================================= ]] --
 -- [[ 🧹 CLEANUP SYSTEM ]]
@@ -24,7 +25,7 @@ getgenv().AutoSaplingMode = getgenv().AutoSaplingMode or false
 getgenv().HitCount = getgenv().HitCount or 3
 getgenv().BreakDelayMs = getgenv().BreakDelayMs or 150
 getgenv().WaitDropMs = getgenv().WaitDropMs or 250  
-getgenv().WalkSpeed = getgenv().WalkSpeed or 20 -- Speed dibikin agak cepet
+getgenv().WalkSpeed = getgenv().WalkSpeed or 45 -- Kecepatan disamakan dengan script teman lu (45)
 
 getgenv().TargetFarmBlock = getgenv().TargetFarmBlock or "Auto (Equipped)"
 getgenv().AutoDropSapling = getgenv().AutoDropSapling or false
@@ -95,7 +96,7 @@ end
 getgenv().GameInventoryModule = FindHotbarModule()
 
 local function GetPlayerGridPosition()
-    local ref = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
+    local ref = workspace:FindFirstChild("Hitbox") and workspace:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
     if ref then return ref.Position.X, ref.Position.Y end
     return nil, nil
 end
@@ -134,19 +135,19 @@ end
 -- [[ WINDUI SECTIONS ]]
 -- [[ ========================================================= ]] --
 local SecFarm = Tab:Section({ Title = "🚜 Master Auto Farm", Box = true, Opened = true })
-SecFarm:Toggle({ Title = "bisa START AUTO FARM", Default = getgenv().MasterAutoFarm, Callback = function(v) getgenv().MasterAutoFarm = v end })
+SecFarm:Toggle({ Title = "▶ START AUTO FARM", Default = getgenv().MasterAutoFarm, Callback = function(v) getgenv().MasterAutoFarm = v end })
 local function GetBlockOptions() local opts = {"Auto (Equipped)"}; for _, item in ipairs(ScanAvailableItems()) do table.insert(opts, item) end; return opts end
 local DropFarmBlock = SecFarm:Dropdown({ Title = "🎯 Target Farm Block", Options = GetBlockOptions(), Default = getgenv().TargetFarmBlock, Callback = function(v) getgenv().TargetFarmBlock = v end })
 SecFarm:Button({ Title = "🔄 Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
 SecFarm:Button({ Title = "📝 Select Farm Tiles (Grid Area)", Callback = function() OpenTileSelectorModal() end })
 
-local SecCollect = Tab:Section({ Title = "🧲 Auto Collect (REAL WALK)", Box = true, Opened = false })
+local SecCollect = Tab:Section({ Title = "🧲 Auto Collect (GENIUS AI)", Box = true, Opened = false })
 SecCollect:Toggle({ Title = "Enable Auto Collect", Default = getgenv().AutoCollect, Callback = function(v) getgenv().AutoCollect = v end })
 SecCollect:Toggle({ Title = "Only Collect Sapling", Default = getgenv().AutoSaplingMode, Callback = function(v) getgenv().AutoSaplingMode = v end })
 
 local SecSpeed = Tab:Section({ Title = "⏱️ Delay & Speeds", Box = true, Opened = false })
 SecSpeed:Input({ Title = "Wait Drop Muncul (ms)", Value = tostring(getgenv().WaitDropMs), Placeholder = tostring(getgenv().WaitDropMs), Callback = function(v) getgenv().WaitDropMs = tonumber(v) or getgenv().WaitDropMs end })
-SecSpeed:Input({ Title = "Walk Speed", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
+SecSpeed:Input({ Title = "Walk Speed (Move Speed)", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
 SecSpeed:Input({ Title = "Break Delay (ms)", Value = tostring(getgenv().BreakDelayMs), Placeholder = tostring(getgenv().BreakDelayMs), Callback = function(v) getgenv().BreakDelayMs = tonumber(v) or getgenv().BreakDelayMs end })
 SecSpeed:Input({ Title = "Hit Count (Pukulan per blok)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
 
@@ -156,13 +157,54 @@ SecSeed:Input({ Title = "Drop Threshold (Amount)", Value = tostring(getgenv().Sa
 local DropSeed = SecSeed:Dropdown({ Title = "Target Drop Seed", Options = ScanAvailableItems(), Default = getgenv().TargetSaplingName, Callback = function(v) getgenv().TargetSaplingName = v end })
 SecSeed:Button({ Title = "🔄 Refresh Seed List", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
 
+local InpDropX = SecSeed:Input({ Title = "Drop Pos X", Value = tostring(getgenv().DropTargetX or ""), Placeholder = "Belum diset", Callback = function(v) getgenv().DropTargetX = tonumber(v) or getgenv().DropTargetX end })
+local InpDropY = SecSeed:Input({ Title = "Drop Pos Y", Value = tostring(getgenv().DropTargetY or ""), Placeholder = "Belum diset", Callback = function(v) getgenv().DropTargetY = tonumber(v) or getgenv().DropTargetY end })
+
+SecSeed:Button({ 
+    Title = "📍 Set Drop Pos (Current Loc)", 
+    Callback = function() 
+        local px, py = GetPlayerGridPosition()
+        if px and py then
+            local cx = math.floor(px / getgenv().GridSize + 0.5)
+            local cy = math.floor(py / getgenv().GridSize + 0.5)
+            getgenv().DropTargetX = cx; getgenv().DropTargetY = cy
+            pcall(function() InpDropX:Set(tostring(cx)) end)
+            pcall(function() InpDropY:Set(tostring(cy)) end)
+        end
+    end
+})
+
 -- [[ ========================================================= ]] --
--- [[ SYSTEM LOGIC & PURE REAL WALK (NO ANCHOR) ]]
+-- [[ SYSTEM LOGIC & GENIUS AI ]]
 -- [[ ========================================================= ]] --
 local Remotes = RS:WaitForChild("Remotes")
 local RemotePlace = Remotes:WaitForChild("PlayerPlaceItem")
 local RemoteBreak = Remotes:WaitForChild("PlayerFist")
 local RemoteDrop = Remotes:WaitForChild("PlayerDrop")
+
+-- ==============================================================
+-- [ LOGIKA TEMAN ] GLOBAL ANCHOR MANAGER (FPS BOOSTER & ANTI DRIFT)
+-- Mengunci fisik karakter jika MasterAutoFarm nyala, agar jalan 100% lurus
+-- ==============================================================
+task.spawn(function()
+    while task.wait(0.2) do
+        pcall(function()
+            local char = LP.Character
+            local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart)
+            local hitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name)
+            
+            if hrp then
+                if getgenv().MasterAutoFarm then
+                    if not hrp.Anchored then hrp.Anchored = true end
+                    if hitbox and not hitbox.Anchored then hitbox.Anchored = true end
+                else
+                    if hrp.Anchored then hrp.Anchored = false end
+                    if hitbox and hitbox.Anchored then hitbox.Anchored = false end
+                end
+            end
+        end)
+    end
+end)
 
 local function CheckDropsAtGrid(TargetGridX, TargetGridY)
     local TargetFolders = { workspace:FindFirstChild("Drops"), workspace:FindFirstChild("Gems") }
@@ -198,50 +240,46 @@ local function CheckDropsAtGrid(TargetGridX, TargetGridY)
 end
 
 -- ==============================================================
--- PURE REAL WALK: GAK ADA ANCHOR, GAK ADA LOCK, 100% FISIKA NYATA
+-- [ LOGIKA TEMAN ] AI MOVE TO (Bergerak dengan CFrame murni tanpa dihalangi game)
 -- ==============================================================
-local function RealWalkTo(targetVec3)
+local function SmartMoveTo(targetVec3, speed)
     local char = LP.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local HitboxFolder = workspace:FindFirstChild("Hitbox")
-    local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name) or hrp
+    local hitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name)
+    local mover = hitbox or hrp
+    if not mover then return false end
     
-    if not MyHitbox then return end
-
-    -- Kita matikan input pemain sementara biar ga berontak
-    if PlayerMovement then pcall(function() PlayerMovement.InputActive = false end) end
-
-    local startPos = MyHitbox.Position
+    local startPos = mover.Position
     local dist = (Vector2.new(startPos.X, startPos.Y) - Vector2.new(targetVec3.X, targetVec3.Y)).Magnitude 
-    local duration = dist / getgenv().WalkSpeed
-    if duration < 0.1 then duration = 0.1 end
+    local duration = dist / (speed or 45)
+    if duration < 0.05 then duration = 0.05 end
 
     local t = 0
-    -- JALAN NYATA (Visual karakter ikutan gerak, gak diam di tempat)
     while t < duration and getgenv().MasterAutoFarm do
-        local dt = task.wait()
+        local dt = RunService.Heartbeat:Wait()
         t = t + dt
         local alpha = math.clamp(t / duration, 0, 1)
         local currentPos = startPos:Lerp(targetVec3, alpha)
         
-        -- Update posisi secara dinamis, biarkan gamenya ngitung normal
-        MyHitbox.CFrame = CFrame.new(currentPos)
+        -- Override Posisi Paksa karena HRP sedang di Anchored
+        mover.CFrame = CFrame.new(currentPos)
+        if hitbox and hrp then hrp.CFrame = CFrame.new(currentPos) end
+        
+        -- Netralkan PlayerMovement bawaan game
         if PlayerMovement then 
             pcall(function() 
                 PlayerMovement.Position = currentPos
-                PlayerMovement.VelocityX = 0 -- Reset dorongan kesamping
+                PlayerMovement.VelocityX = 0
                 PlayerMovement.VelocityY = 0
             end) 
         end
     end
     
-    MyHitbox.CFrame = CFrame.new(targetVec3)
-    if PlayerMovement then 
-        pcall(function() 
-            PlayerMovement.Position = targetVec3 
-            PlayerMovement.InputActive = true -- Nyalain input lagi
-        end) 
-    end
+    mover.CFrame = CFrame.new(targetVec3)
+    if hitbox and hrp then hrp.CFrame = CFrame.new(targetVec3) end
+    if PlayerMovement then pcall(function() PlayerMovement.Position = targetVec3 end) end
+    
+    return true
 end
 
 local function FindEmptyGridNearPlayer(BaseX, BaseY)
@@ -295,7 +333,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     end
                 end
                 
-                -- [[ LOGIKA AUTO COLLECT: KARAKTER BUKAN HANTU LAGI, JALAN ASLI! ]]
+                -- [[ LOGIKA AUTO COLLECT GENIUS (SORT BY MAGNITUDE) ]]
                 if getgenv().AutoCollect then
                     task.wait(getgenv().WaitDropMs / 1000) 
                     
@@ -309,25 +347,33 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         local char = LP.Character
                         local hrp = char and char:FindFirstChild("HumanoidRootPart")
                         local currZ = hrp and hrp.Position.Z or 0
+                        local pPos = hrp and hrp.Position or Vector3.zero
                         
-                        -- Jalan nyata ke setiap item drop
+                        -- [ LOGIKA TEMAN ] Sortir item dari yang posisinya paling dekat!
+                        table.sort(TilesToCollect, function(a, b)
+                            local posA = Vector3.new(a.x * getgenv().GridSize, a.y * getgenv().GridSize, currZ)
+                            local posB = Vector3.new(b.x * getgenv().GridSize, b.y * getgenv().GridSize, currZ)
+                            return (pPos - posA).Magnitude < (pPos - posB).Magnitude
+                        end)
+                        
                         for _, tile in ipairs(TilesToCollect) do
                             if not getgenv().MasterAutoFarm then break end
                             local targetVec = Vector3.new(tile.x * getgenv().GridSize, tile.y * getgenv().GridSize, currZ)
                             
-                            RealWalkTo(targetVec) 
+                            -- Gunakan AI Move To yang aman (Karakter Sedang Di Anchor)
+                            SmartMoveTo(targetVec, getgenv().WalkSpeed) 
                             
-                            -- Tunggu sampai item tersedot masuk tas
                             local waitTimeout = 0
                             while CheckDropsAtGrid(tile.x, tile.y) and waitTimeout < 15 and getgenv().MasterAutoFarm do 
                                 task.wait(0.1); waitTimeout = waitTimeout + 1 
                             end
+                            pPos = targetVec -- Update acuan titik saat ini
                         end
                         
                         task.wait(0.1)
-                        -- Jalan nyata kembali ke titik tempat lu mulai farm
+                        -- Kembali ke titik awal
                         local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
-                        RealWalkTo(baseVec) 
+                        SmartMoveTo(baseVec, getgenv().WalkSpeed) 
                     end
                 end
                 
@@ -348,9 +394,8 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         local hrp = char and char:FindFirstChild("HumanoidRootPart")
                         local currZ = hrp and hrp.Position.Z or 0
                         
-                        -- Jalan nyata ke titik drop
                         local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
-                        RealWalkTo(dropVec) 
+                        SmartMoveTo(dropVec, getgenv().WalkSpeed) 
                         task.wait(0.2)
                         
                         pcall(function() RemoteDrop:FireServer(sapSlot, sapAmount) end)
@@ -371,9 +416,8 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         
                         task.wait(0.5)
                         
-                        -- Jalan nyata kembali ke base
                         local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
-                        RealWalkTo(baseVec) 
+                        SmartMoveTo(baseVec, getgenv().WalkSpeed) 
                     end
                 end
 
