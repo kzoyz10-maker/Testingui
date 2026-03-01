@@ -31,60 +31,49 @@ local Window = WindUI:CreateWindow({
     HasOutline = true,
 })
 
-local LoadedTabs = {}
-
-local function CreateAutoLoadTab(TabName, IconName, DescText, LoadLink)
-    -- BIKIN TAB (Di WindUI pakai :Tab, bukan :CreateTab)
+-- Fungsi buat Bikin Tab + Langsung Auto-Load Script dari Github
+local function AutoLoadTabFromGithub(TabName, IconName, DescText, LoadLink)
+    -- Bikin Tab-nya dulu di WindUI
     local Tab = Window:Tab({
         Title = TabName,
         Icon = IconName,
         Desc = DescText
     })
 
-    -- BIKIN SECTION (Di WindUI pakai :Section)
-    local LoadSection = Tab:Section({ Title = "Module Status", TextXAlignment = "Left" })
-    
-    -- BIKIN TOMBOL (Di WindUI pakai :Button)
-    Tab:Button({
-        Title = "Load " .. TabName,
-        Desc = "Klik untuk memuat script dari server.",
-        Callback = function()
-            if LoadedTabs[TabName] then 
-                WindUI:Notify({ Title = "Info", Content = "Module " .. TabName .. " sudah dimuat!", Duration = 3 })
-                return 
-            end
-
-            WindUI:Notify({ Title = "Loading...", Content = "Memuat " .. TabName .. "...", Duration = 2 })
+    -- Langsung download dan jalankan script-nya di background tanpa bikin ngelag
+    task.spawn(function()
+        local success, scriptCode = pcall(function()
+            return game:HttpGet(LoadLink)
+        end)
+        
+        if success and scriptCode then
+            local func, compileErr = loadstring(scriptCode)
             
-            task.spawn(function()
-                local scriptCode = game:HttpGet(LoadLink)
-                local func, compileErr = loadstring(scriptCode)
+            if func then
+                local runSuccess, runErr = pcall(function()
+                    func(Tab) -- Lempar variabel Tab ke script Github lu biar UI kerender di situ
+                end)
                 
-                if func then
-                    local success, runErr = pcall(function()
-                        func(Tab) -- Lempar variabel Tab ke script Github lu
-                    end)
-                    
-                    if success then
-                        LoadedTabs[TabName] = true
-                        WindUI:Notify({ Title = "Sukses", Content = TabName .. " berhasil dimuat!", Duration = 3 })
-                    else
-                        WindUI:Notify({ Title = "Error", Content = tostring(runErr), Duration = 5 })
-                    end
-                else
-                    WindUI:Notify({ Title = "Error Compile", Content = tostring(compileErr), Duration = 5 })
+                if not runSuccess then
+                    WindUI:Notify({ Title = "Error " .. TabName, Content = tostring(runErr), Duration = 5 })
                 end
-            end)
+            else
+                WindUI:Notify({ Title = "Compile Error " .. TabName, Content = tostring(compileErr), Duration = 5 })
+            end
+        else
+            WindUI:Notify({ Title = "Gagal Memuat " .. TabName, Content = "Link GitHub tidak dapat diakses / bermasalah.", Duration = 5 })
         end
-    })
+    end)
 end
 
--- List Tab (Icon pakai Lucide Icons)
-CreateAutoLoadTab("Pabrik", "factory", "Pabrik (Factory)", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Pabrik.lua")
-CreateAutoLoadTab("Auto Farm", "sprout", "Semi Auto Farm", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Autofarm.lua")
-CreateAutoLoadTab("Manager", "briefcase", "Farming Manager", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Manager.lua")
-CreateAutoLoadTab("Auto PTHT", "tractor", "Plant & Harvest", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Autoplant.lua")
-CreateAutoLoadTab("Auto Collect", "magnet", "Sedot Sampe Peot", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Autocollect.lua")
-CreateAutoLoadTab("Information", "info", "How to use?", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Hrs.lua")
+-- ========================================== --
+-- [[ LIST TAB & AUTO LOAD MUNCUL SEMUA ]]
+-- ========================================== --
+WindUI:Notify({ Title = "Kzoyz Hub", Content = "Memuat semua fitur di background...", Duration = 3 })
 
-WindUI:Notify({ Title = "Kzoyz Hub", Content = "Welcome back bosku! Anti-AFK is active.", Duration = 5 })
+AutoLoadTabFromGithub("Pabrik", "factory", "Pabrik (Factory)", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Pabrik.lua")
+AutoLoadTabFromGithub("Auto Farm", "sprout", "Semi Auto Farm", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Autofarm.lua")
+AutoLoadTabFromGithub("Manager", "briefcase", "Farming Manager", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Manager.lua")
+AutoLoadTabFromGithub("Auto PTHT", "tractor", "Plant & Harvest", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Autoplant.lua")
+AutoLoadTabFromGithub("Auto Collect", "magnet", "Sedot Sampe Peot", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Autocollect.lua")
+AutoLoadTabFromGithub("Information", "info", "How to use?", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Hrs.lua")
