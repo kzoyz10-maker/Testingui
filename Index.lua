@@ -83,7 +83,7 @@ local function CreateAutoLoadTab(TabName, IconName, DescText, LoadLink)
 end
 
 -- Bikin list Tab (Pilih icon dari Lucide Icons yang disupport WindUI)
-CreateAutoLoadTab("Pabrik", "lucide-factory", "Pabrik (Factory)", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Pabrik.lua")
+CreateAutoLoadTab("Pabrik", "lucide-factory", "Pabrik (Factory)", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Pabrik.lua")
 CreateAutoLoadTab("Auto Farm", "lucide-sprout", "Semi Auto Farm", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Autofarm.lua")
 CreateAutoLoadTab("Manager", "lucide-briefcase", "Farming Manager", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Manager.lua")
 CreateAutoLoadTab("Auto PTHT", "lucide-tractor", "Plant & Harvest", "https://raw.githubusercontent.com/Koziz/CAW-SCRIPT/refs/heads/main/Autoplant.lua")
