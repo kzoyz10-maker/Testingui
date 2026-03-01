@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Pabrik v2.0 - WINDUI EDITION" 
+getgenv().ScriptVersion = "Pabrik v2.1 - WINDUI FIXED" 
 
 -- ========================================== --
 -- [[ DEFAULT SETTINGS (ANTI-RESET) ]]
@@ -56,21 +56,13 @@ pcall(function() UIManager = require(RS:WaitForChild("Managers"):WaitForChild("U
 pcall(function() PlayerMovement = require(LP.PlayerScripts:WaitForChild("PlayerMovement")) end)
 
 if getgenv().KzoyzHeartbeatPabrik then getgenv().KzoyzHeartbeatPabrik:Disconnect(); getgenv().KzoyzHeartbeatPabrik = nil end
-
 getgenv().KzoyzHeartbeatPabrik = RunService.Heartbeat:Connect(function()
     if getgenv().IsGhosting then
         if getgenv().HoldCFrame then
             local char = LP.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then 
-                char.HumanoidRootPart.CFrame = getgenv().HoldCFrame 
-            end
+            if char and char:FindFirstChild("HumanoidRootPart") then char.HumanoidRootPart.CFrame = getgenv().HoldCFrame end
         end
-        if PlayerMovement then
-            pcall(function()
-                PlayerMovement.VelocityY = 0; PlayerMovement.VelocityX = 0; PlayerMovement.VelocityZ = 0
-                PlayerMovement.Grounded = true; PlayerMovement.Jumping = false
-            end)
-        end
+        if PlayerMovement then pcall(function() PlayerMovement.VelocityY = 0; PlayerMovement.VelocityX = 0; PlayerMovement.VelocityZ = 0; PlayerMovement.Grounded = true; PlayerMovement.Jumping = false end) end
     end
 end)
 
@@ -140,61 +132,63 @@ end
 -- [[ WIND UI MAKER UNTUK TAB INI ]]
 -- ========================================== --
 
-Tab:CreateSection({ Title = "🚀 Smart Pabrik Control" })
+Tab:Section({ Title = "🚀 Smart Pabrik Control" })
 
-Tab:CreateToggle({
+Tab:Toggle({
     Title = "START SMART PABRIK",
     Default = getgenv().EnablePabrik,
     Callback = function(value) getgenv().EnablePabrik = value end
 })
 
-Tab:CreateToggle({
+Tab:Toggle({
     Title = "Auto Collect Sapling (Pas Break)",
     Default = getgenv().OnlyCollectSapling,
     Callback = function(value) getgenv().OnlyCollectSapling = value end
 })
 
-local DropSeed = Tab:CreateDropdown({
+local DropSeed = Tab:Dropdown({
     Title = "Pilih Seed",
     Options = ScanAvailableItems(),
     Default = getgenv().SelectedSeed,
     Callback = function(value) getgenv().SelectedSeed = value end
 })
 
-local DropBlock = Tab:CreateDropdown({
+local DropBlock = Tab:Dropdown({
     Title = "Pilih Block",
     Options = ScanAvailableItems(),
     Default = getgenv().SelectedBlock,
     Callback = function(value) getgenv().SelectedBlock = value end
 })
 
-Tab:CreateButton({
+Tab:Button({
     Title = "Refresh Tas Item",
     Callback = function() 
-        local newItems = ScanAvailableItems()
-        DropSeed:Refresh(newItems)
-        DropBlock:Refresh(newItems)
+        pcall(function()
+            local newItems = ScanAvailableItems()
+            DropSeed:Refresh(newItems)
+            DropBlock:Refresh(newItems)
+        end)
     end
 })
 
-Tab:CreateSection({ Title = "🗺️ Area Scan Setup" })
+Tab:Section({ Title = "🗺️ Area Scan Setup" })
 
-Tab:CreateInput({ Title = "Area Start X", Default = tostring(getgenv().PabrikStartX), Callback = function(v) getgenv().PabrikStartX = tonumber(v) or 0 end })
-Tab:CreateInput({ Title = "Area End X", Default = tostring(getgenv().PabrikEndX), Callback = function(v) getgenv().PabrikEndX = tonumber(v) or 100 end })
-Tab:CreateInput({ Title = "Area Start Y", Default = tostring(getgenv().PabrikStartY), Callback = function(v) getgenv().PabrikStartY = tonumber(v) or 0 end })
-Tab:CreateInput({ Title = "Area End Y", Default = tostring(getgenv().PabrikEndY), Callback = function(v) getgenv().PabrikEndY = tonumber(v) or 100 end })
+Tab:Input({ Title = "Area Start X", Default = tostring(getgenv().PabrikStartX), Callback = function(v) getgenv().PabrikStartX = tonumber(v) or 0 end })
+Tab:Input({ Title = "Area End X", Default = tostring(getgenv().PabrikEndX), Callback = function(v) getgenv().PabrikEndX = tonumber(v) or 100 end })
+Tab:Input({ Title = "Area Start Y", Default = tostring(getgenv().PabrikStartY), Callback = function(v) getgenv().PabrikStartY = tonumber(v) or 0 end })
+Tab:Input({ Title = "Area End Y", Default = tostring(getgenv().PabrikEndY), Callback = function(v) getgenv().PabrikEndY = tonumber(v) or 100 end })
 
-Tab:CreateSection({ Title = "⚙️ Threshold Settings" })
+Tab:Section({ Title = "⚙️ Threshold Settings" })
 
-Tab:CreateInput({ Title = "Block Threshold (Sisa di tas)", Default = tostring(getgenv().BlockThreshold), Callback = function(v) getgenv().BlockThreshold = tonumber(v) or 20 end })
-Tab:CreateInput({ Title = "Keep Seed Amt (Sisa di tas)", Default = tostring(getgenv().KeepSeedAmt), Callback = function(v) getgenv().KeepSeedAmt = tonumber(v) or 20 end })
+Tab:Input({ Title = "Block Threshold (Sisa di tas)", Default = tostring(getgenv().BlockThreshold), Callback = function(v) getgenv().BlockThreshold = tonumber(v) or 20 end })
+Tab:Input({ Title = "Keep Seed Amt (Sisa di tas)", Default = tostring(getgenv().KeepSeedAmt), Callback = function(v) getgenv().KeepSeedAmt = tonumber(v) or 20 end })
 
-Tab:CreateSection({ Title = "📍 Posisi Break & Drop" })
+Tab:Section({ Title = "📍 Posisi Break & Drop" })
 
-Tab:CreateInput({ Title = "Break Pos X", Default = tostring(getgenv().BreakPosX), Callback = function(v) getgenv().BreakPosX = tonumber(v) or 0 end })
-Tab:CreateInput({ Title = "Break Pos Y", Default = tostring(getgenv().BreakPosY), Callback = function(v) getgenv().BreakPosY = tonumber(v) or 0 end })
-Tab:CreateButton({
-    Title = "Set Break Pos (Kamu)",
+Tab:Input({ Title = "Break Pos X", Default = tostring(getgenv().BreakPosX), Callback = function(v) getgenv().BreakPosX = tonumber(v) or 0 end })
+Tab:Input({ Title = "Break Pos Y", Default = tostring(getgenv().BreakPosY), Callback = function(v) getgenv().BreakPosY = tonumber(v) or 0 end })
+Tab:Button({
+    Title = "Set Break Pos (Current Loc)",
     Callback = function() 
         local H = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) 
         if H then 
@@ -204,10 +198,10 @@ Tab:CreateButton({
     end
 })
 
-Tab:CreateInput({ Title = "Drop Pos X", Default = tostring(getgenv().DropPosX), Callback = function(v) getgenv().DropPosX = tonumber(v) or 0 end })
-Tab:CreateInput({ Title = "Drop Pos Y", Default = tostring(getgenv().DropPosY), Callback = function(v) getgenv().DropPosY = tonumber(v) or 0 end })
-Tab:CreateButton({
-    Title = "Set Drop Pos (Kamu)",
+Tab:Input({ Title = "Drop Pos X", Default = tostring(getgenv().DropPosX), Callback = function(v) getgenv().DropPosX = tonumber(v) or 0 end })
+Tab:Input({ Title = "Drop Pos Y", Default = tostring(getgenv().DropPosY), Callback = function(v) getgenv().DropPosY = tonumber(v) or 0 end })
+Tab:Button({
+    Title = "Set Drop Pos (Current Loc)",
     Callback = function() 
         local H = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) 
         if H then 
@@ -217,12 +211,12 @@ Tab:CreateButton({
     end
 })
 
-Tab:CreateSection({ Title = "⏱️ Kecepatan & Delay" })
+Tab:Section({ Title = "⏱️ Kecepatan & Delay" })
 
-Tab:CreateInput({ Title = "Walk Speed", Default = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or 16 end })
-Tab:CreateInput({ Title = "Place Delay (ms)", Default = tostring(getgenv().PlaceDelay), Callback = function(v) getgenv().PlaceDelay = tonumber(v) or 0.15 end })
-Tab:CreateInput({ Title = "Break Delay (ms)", Default = tostring(getgenv().BreakDelay), Callback = function(v) getgenv().BreakDelay = tonumber(v) or 0.15 end })
-Tab:CreateInput({ Title = "Hit Count (Pukulan)", Default = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or 3 end })
+Tab:Input({ Title = "Walk Speed", Default = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or 16 end })
+Tab:Input({ Title = "Place Delay (ms)", Default = tostring(getgenv().PlaceDelay), Callback = function(v) getgenv().PlaceDelay = tonumber(v) or 0.15 end })
+Tab:Input({ Title = "Break Delay (ms)", Default = tostring(getgenv().BreakDelay), Callback = function(v) getgenv().BreakDelay = tonumber(v) or 0.15 end })
+Tab:Input({ Title = "Hit Count (Pukulan)", Default = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or 3 end })
 
 
 -- ========================================== --
@@ -584,9 +578,6 @@ task.spawn(function()
                     needToFarmBlock = true
                 end
 
-                -- =============================================== --
-                -- EKSEKUSI PANEN + SWEEP PER-BARIS (PER Y)
-                -- =============================================== --
                 if didHarvest then
                     for i, panen in ipairs(targetPanen) do
                         if not getgenv().EnablePabrik then break end
@@ -609,9 +600,6 @@ task.spawn(function()
                     end
                 end
 
-                -- =============================================== --
-                -- EKSEKUSI TANAM
-                -- =============================================== --
                 if didPlant then
                     for _, spot in ipairs(targetTanam) do
                         if not getgenv().EnablePabrik then break end
@@ -631,9 +619,6 @@ task.spawn(function()
                     end
                 end
 
-                -- =============================================== --
-                -- PABRIK BLOCK & DROP SEED (STRICT THRESHOLD)
-                -- =============================================== --
                 if needToFarmBlock and getgenv().EnablePabrik then
                     local blockSlot = GetSlotByItemName(getgenv().SelectedBlock)
                     
@@ -647,9 +632,7 @@ task.spawn(function()
                                 
                                 if currentBlockAmt <= getgenv().BlockThreshold or not blockSlot then
                                     local hasAny, _ = CheckDropsType(BreakTarget.X, BreakTarget.Y)
-                                    if hasAny then
-                                        TrueGhostCollect(BreakTarget.X, BreakTarget.Y, false) 
-                                    end
+                                    if hasAny then TrueGhostCollect(BreakTarget.X, BreakTarget.Y, false) end
                                     break 
                                 end
                                 
@@ -664,9 +647,7 @@ task.spawn(function()
                                 
                                 if getgenv().OnlyCollectSapling then
                                     local _, hasSapling = CheckDropsType(BreakTarget.X, BreakTarget.Y)
-                                    if hasSapling then
-                                        TrueGhostCollect(BreakTarget.X, BreakTarget.Y, true) 
-                                    end
+                                    if hasSapling then TrueGhostCollect(BreakTarget.X, BreakTarget.Y, true) end
                                 end
                             end
                         end
