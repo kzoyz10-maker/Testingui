@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v16.0 (ANTI-CRASH & REAL WALK)" 
+getgenv().ScriptVersion = "Auto Farm v17.0 (LOGIKA TEMAN: STATE MACHINE)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -22,10 +22,11 @@ getgenv().GridSize = getgenv().GridSize or 4.5
 
 getgenv().MasterAutoFarm = getgenv().MasterAutoFarm or false
 getgenv().AutoSaplingMode = getgenv().AutoSaplingMode or false
-getgenv().HitCount = getgenv().HitCount or 3
-getgenv().BreakDelayMs = getgenv().BreakDelayMs or 150
+-- Disamain kayak script teman lu (Burst Hit)
+getgenv().HitCount = getgenv().HitCount or 25 
+getgenv().BreakDelayMs = getgenv().BreakDelayMs or 250
 getgenv().WaitDropMs = getgenv().WaitDropMs or 250  
-getgenv().WalkSpeed = getgenv().WalkSpeed or 25 
+getgenv().WalkSpeed = getgenv().WalkSpeed or 45 -- Speed ngikut teman lu (45)
 
 getgenv().TargetFarmBlock = getgenv().TargetFarmBlock or "Auto (Equipped)"
 getgenv().AutoDropSapling = getgenv().AutoDropSapling or false
@@ -33,8 +34,6 @@ getgenv().SaplingThreshold = getgenv().SaplingThreshold or 50
 getgenv().TargetSaplingName = getgenv().TargetSaplingName or "Kosong"
 
 getgenv().SelectedTiles = getgenv().SelectedTiles or {{x = 0, y = 1}}
-getgenv().DropTargetX = getgenv().DropTargetX or nil
-getgenv().DropTargetY = getgenv().DropTargetY or nil
 
 local PlayerMovement
 task.spawn(function() pcall(function() PlayerMovement = require(LP.PlayerScripts:WaitForChild("PlayerMovement")) end) end)
@@ -46,7 +45,7 @@ pcall(function() WorldManager = require(RS:WaitForChild("Managers"):WaitForChild
 pcall(function() ItemsManager = require(RS:WaitForChild("Managers"):WaitForChild("ItemsManager")) end)
 
 -- [[ ========================================================= ]] --
--- [[ INVENTORY TRANSLATOR (BIAR NAMA ITEM MUNCUL DI UI) ]]
+-- [[ INVENTORY TRANSLATOR ]]
 -- [[ ========================================================= ]] --
 getgenv().InventoryCacheNameMap = {}
 
@@ -156,10 +155,10 @@ end
 -- [[ WINDUI SECTIONS ]]
 -- [[ ========================================================= ]] --
 
-local SecFarm = Tab:Section({ Title = "🚜 Master Auto Farm & Collect", Box = true, Opened = true })
+local SecFarm = Tab:Section({ Title = "🚜 Smart Auto-Farm Engine", Box = true, Opened = true })
 
 SecFarm:Toggle({ 
-    Title = "▶ START AUTO FARM & COLLECT", 
+    Title = "▶ ENABLE SMART FARM ENGINE", 
     Default = getgenv().MasterAutoFarm, 
     Callback = function(v) 
         getgenv().MasterAutoFarm = v 
@@ -169,23 +168,19 @@ SecFarm:Toggle({
     end 
 })
 
-local function GetBlockOptions() 
-    local opts = {"Auto (Equipped)"}; 
-    for _, item in ipairs(ScanAvailableItems()) do table.insert(opts, item) end; 
-    return opts 
-end
+local function GetBlockOptions() local opts = {"Auto (Equipped)"}; for _, item in ipairs(ScanAvailableItems()) do table.insert(opts, item) end; return opts end
 local DropFarmBlock = SecFarm:Dropdown({ Title = "🎯 Target Farm Block", Options = GetBlockOptions(), Default = getgenv().TargetFarmBlock, Callback = function(v) getgenv().TargetFarmBlock = v end })
 SecFarm:Button({ Title = "🔄 Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
-SecFarm:Button({ Title = "📝 Select Farm TileArea", Callback = function() OpenTileSelectorModal() end })
+SecFarm:Button({ Title = "📝 Select Farm Tiles (Grid Area)", Callback = function() OpenTileSelectorModal() end })
 
-local SecCollect = Tab:Section({ Title = "🧲 Filter Auto Collect", Box = true, Opened = false })
+local SecCollect = Tab:Section({ Title = "🧲 Genius Auto-Loot Settings", Box = true, Opened = false })
 SecCollect:Toggle({ Title = "Only Collect Sapling (Abaikan drop lain)", Default = getgenv().AutoSaplingMode, Callback = function(v) getgenv().AutoSaplingMode = v end })
 
 local SecSpeed = Tab:Section({ Title = "⏱️ Delay & Speeds", Box = true, Opened = false })
 SecSpeed:Input({ Title = "Wait Drop Muncul (ms)", Value = tostring(getgenv().WaitDropMs), Placeholder = tostring(getgenv().WaitDropMs), Callback = function(v) getgenv().WaitDropMs = tonumber(v) or getgenv().WaitDropMs end })
-SecSpeed:Input({ Title = "Walk Speed (Kecepatan Collect)", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
-SecSpeed:Input({ Title = "Break Delay (ms)", Value = tostring(getgenv().BreakDelayMs), Placeholder = tostring(getgenv().BreakDelayMs), Callback = function(v) getgenv().BreakDelayMs = tonumber(v) or getgenv().BreakDelayMs end })
-SecSpeed:Input({ Title = "Hit Count (Pukulan per blok)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
+SecSpeed:Input({ Title = "AI Walk Speed", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
+SecSpeed:Input({ Title = "Delay Break (ms)", Value = tostring(getgenv().BreakDelayMs), Placeholder = tostring(getgenv().BreakDelayMs), Callback = function(v) getgenv().BreakDelayMs = tonumber(v) or getgenv().BreakDelayMs end })
+SecSpeed:Input({ Title = "Hit Spam / Break (Burst)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
 
 local SecSeed = Tab:Section({ Title = "🌱 Auto Drop Seed (Sapling)", Box = true, Opened = false })
 SecSeed:Toggle({ Title = "Enable Auto Drop Sapling", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v end })
@@ -218,7 +213,6 @@ local RemotePlace = Remotes:WaitForChild("PlayerPlaceItem")
 local RemoteBreak = Remotes:WaitForChild("PlayerFist")
 local RemoteDrop = Remotes:WaitForChild("PlayerDrop")
 
--- Bersihkan highlight saja
 getgenv().KzoyzHeartbeat = RunService.Heartbeat:Connect(function()
     local highlights = workspace:FindFirstChild("TileHighligts") or workspace:FindFirstChild("TileHighlights")
     if highlights then pcall(function() highlights:ClearAllChildren() end) end
@@ -257,9 +251,6 @@ local function CheckDropsAtGrid(TargetGridX, TargetGridY)
     if getgenv().AutoSaplingMode then return foundSapling else return foundAny end
 end
 
--- ==============================================================
--- NO ANCHOR SAFE MOVE
--- ==============================================================
 local function SafeMoveTo(targetVec3)
     local char = LP.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -323,150 +314,206 @@ local function FindEmptyGridNearPlayer(BaseX, BaseY)
 end
 
 -- ==============================================================
--- MAIN FARM LOOP (FULL ANTI-CRASH)
+-- LOGIKA TEMAN (STATE MACHINE: PLACE -> BREAK -> LOOT)
 -- ==============================================================
+local farmPhase = "PLACE"
+local farmStartPos = nil
+local isOutOfItems = false
+
 getgenv().KzoyzFarmLoop = task.spawn(function() 
     while true do 
-        -- BUNGKUS PCALL BIAR GAK PERNAH MATI LOOPNYA
         pcall(function()
             if getgenv().MasterAutoFarm and InventoryMod then 
                 
-                local PosX, PosY = GetPlayerGridPosition()
+                -- Kunci Posisi Base secara otomatis (hanya di awal)
+                local px, py = GetPlayerGridPosition()
+                if not px then return end
                 
-                if PosX and PosY then 
-                    local BaseX = math.floor(PosX / getgenv().GridSize + 0.5)
-                    local BaseY = math.floor(PosY / getgenv().GridSize + 0.5)
-                    local ItemIndex 
-                    
-                    if getgenv().TargetFarmBlock and getgenv().TargetFarmBlock ~= "Auto (Equipped)" then
-                        ItemIndex = GetSlotByItemName(getgenv().TargetFarmBlock) -- PAKE NAMA SEKARANG!
-                    else
-                        if getgenv().GameInventoryModule and getgenv().GameInventoryModule.GetSelectedHotbarItem then 
-                            _, ItemIndex = getgenv().GameInventoryModule.GetSelectedHotbarItem() 
-                        elseif getgenv().GameInventoryModule and getgenv().GameInventoryModule.GetSelectedItem then 
-                            _, ItemIndex = getgenv().GameInventoryModule.GetSelectedItem() 
-                        end 
-                    end
-                    
-                    if ItemIndex then
-                        for _, offset in ipairs(getgenv().SelectedTiles) do 
-                            if not getgenv().MasterAutoFarm then break end 
-                            local TGrid = Vector2.new(BaseX + offset.x, BaseY + offset.y) 
-                            
-                            -- FIX CRASH REMOTE (Deteksi Event vs Function)
-                            pcall(function()
-                                if RemotePlace:IsA("RemoteEvent") then 
-                                    RemotePlace:FireServer(TGrid, ItemIndex)
-                                else 
-                                    RemotePlace:InvokeServer(TGrid, ItemIndex) 
-                                end
-                            end)
-                            
-                            task.wait(getgenv().ActionDelay) 
-                        end
-                    end
+                if not farmStartPos then 
+                    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+                    local currZ = hrp and hrp.Position.Z or 0
+                    farmStartPos = {
+                        x = math.floor(px / getgenv().GridSize + 0.5), 
+                        y = math.floor(py / getgenv().GridSize + 0.5),
+                        z = currZ
+                    }
+                end
+                
+                local BaseX = farmStartPos.x
+                local BaseY = farmStartPos.y
+                local currZ = farmStartPos.z
 
-                    for _, offset in ipairs(getgenv().SelectedTiles) do 
-                        if not getgenv().MasterAutoFarm then break end 
-                        local TGrid = Vector2.new(BaseX + offset.x, BaseY + offset.y) 
-                        for hit = 1, getgenv().HitCount do 
-                            if not getgenv().MasterAutoFarm then break end 
-                            
-                            -- FIX CRASH REMOTE (Deteksi Event vs Function)
-                            pcall(function()
-                                if RemoteBreak:IsA("RemoteEvent") then 
-                                    RemoteBreak:FireServer(TGrid)
-                                else 
-                                    RemoteBreak:InvokeServer(TGrid) 
+                local targetList = {}
+                for _, offset in ipairs(getgenv().SelectedTiles) do
+                    table.insert(targetList, {x = BaseX + offset.x, y = BaseY + offset.y})
+                end
+
+                if #targetList > 0 then
+                    
+                    -- ================== FASE 1: PLACE ================== --
+                    if farmPhase == "PLACE" then
+                        local itemHabis = false
+                        local placedAny = false
+                        
+                        local ItemIndex 
+                        if getgenv().TargetFarmBlock and getgenv().TargetFarmBlock ~= "Auto (Equipped)" then
+                            ItemIndex = GetSlotByItemName(getgenv().TargetFarmBlock)
+                        else
+                            if getgenv().GameInventoryModule and getgenv().GameInventoryModule.GetSelectedHotbarItem then 
+                                _, ItemIndex = getgenv().GameInventoryModule.GetSelectedHotbarItem() 
+                            elseif getgenv().GameInventoryModule and getgenv().GameInventoryModule.GetSelectedItem then 
+                                _, ItemIndex = getgenv().GameInventoryModule.GetSelectedItem() 
+                            end 
+                        end
+                        
+                        if ItemIndex then
+                            for _, tile in ipairs(targetList) do
+                                if not getgenv().MasterAutoFarm then break end
+                                
+                                local hasBlock = false
+                                if WorldManager and WorldManager.GetTile then
+                                    for l = 1, 5 do if WorldManager.GetTile(tile.x, tile.y, l) then hasBlock = true break end end
                                 end
-                            end)
-                            
-                            task.wait(getgenv().BreakDelayMs / 1000) 
+                                
+                                if not hasBlock then
+                                    local TGrid = Vector2.new(tile.x, tile.y)
+                                    pcall(function()
+                                        if RemotePlace:IsA("RemoteEvent") then RemotePlace:FireServer(TGrid, ItemIndex)
+                                        else RemotePlace:InvokeServer(TGrid, ItemIndex) end
+                                    end)
+                                    placedAny = true
+                                    task.wait(getgenv().ActionDelay)
+                                end
+                            end
+                        else
+                            itemHabis = true
                         end
-                    end
-                    
-                    -- [[ LOGIKA AUTO COLLECT (SELALU AKTIF JIKA FARM NYALA) ]]
-                    task.wait(getgenv().WaitDropMs / 1000) 
-                    
-                    local TilesToCollect = {}
-                    for _, offset in ipairs(getgenv().SelectedTiles) do
-                        local tx = BaseX + offset.x; local ty = BaseY + offset.y
-                        if CheckDropsAtGrid(tx, ty) then table.insert(TilesToCollect, {x = tx, y = ty}) end
-                    end
-                    
-                    if #TilesToCollect > 0 and getgenv().MasterAutoFarm then
-                        local char = LP.Character
-                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                        local currZ = hrp and hrp.Position.Z or 0
-                        local pPos = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
                         
-                        table.sort(TilesToCollect, function(a, b)
-                            local posA = Vector3.new(a.x * getgenv().GridSize, a.y * getgenv().GridSize, currZ)
-                            local posB = Vector3.new(b.x * getgenv().GridSize, b.y * getgenv().GridSize, currZ)
-                            return (pPos - posA).Magnitude < (pPos - posB).Magnitude
-                        end)
+                        if itemHabis or not placedAny then
+                            farmPhase = "BREAK"
+                        end
+
+                    -- ================== FASE 2: BREAK ================== --
+                    elseif farmPhase == "BREAK" then
+                        local brokeAny = false
                         
-                        for _, tile in ipairs(TilesToCollect) do
+                        for _, tile in ipairs(targetList) do
                             if not getgenv().MasterAutoFarm then break end
-                            local targetVec = Vector3.new(tile.x * getgenv().GridSize, tile.y * getgenv().GridSize, currZ)
-                            SafeMoveTo(targetVec) 
                             
-                            local waitTimeout = 0
-                            while CheckDropsAtGrid(tile.x, tile.y) and waitTimeout < 15 and getgenv().MasterAutoFarm do 
-                                task.wait(0.1); waitTimeout = waitTimeout + 1 
+                            local hasBlock = false
+                            if WorldManager and WorldManager.GetTile then
+                                for l = 1, 5 do if WorldManager.GetTile(tile.x, tile.y, l) then hasBlock = true break end end
+                            else
+                                hasBlock = true -- Fallback asumsikan ada block jika GetTile gagal
                             end
-                            pPos = targetVec
+                            
+                            if hasBlock then
+                                local TGrid = Vector2.new(tile.x, tile.y)
+                                local hitsToSend = getgenv().HitCount or 25 
+                                
+                                -- SPAM HIT BURST (Logika Teman Lu)
+                                for i = 1, hitsToSend do
+                                    pcall(function()
+                                        if RemoteBreak:IsA("RemoteEvent") then RemoteBreak:FireServer(TGrid)
+                                        else RemoteBreak:InvokeServer(TGrid) end
+                                    end)
+                                end
+                                
+                                -- Tunggu setelah nge-burst 
+                                task.wait(getgenv().BreakDelayMs / 1000)
+                                brokeAny = true
+                            end
                         end
                         
-                        task.wait(0.1)
-                        local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
-                        SafeMoveTo(baseVec) 
-                    end
-                    
-                    -- [[ LOGIKA AUTO DROP SAPLING ]]
-                    if getgenv().AutoDropSapling and getgenv().TargetSaplingName ~= "Kosong" then
-                        local sapSlot = GetSlotByItemName(getgenv().TargetSaplingName)
-                        local sapAmount = GetItemAmountByItemName(getgenv().TargetSaplingName)
+                        if not brokeAny then
+                            farmPhase = "LOOT"
+                        end
+
+                    -- ================== FASE 3: LOOT / COLLECT ================== --
+                    elseif farmPhase == "LOOT" then
+                        task.wait(getgenv().WaitDropMs / 1000) 
                         
-                        if sapSlot and sapAmount >= getgenv().SaplingThreshold then
-                            local dropX, dropY
-                            if getgenv().DropTargetX and getgenv().DropTargetY then
-                                dropX = getgenv().DropTargetX; dropY = getgenv().DropTargetY
-                            else
-                                dropX, dropY = FindEmptyGridNearPlayer(BaseX, BaseY)
-                            end
-                            
+                        local TilesToCollect = {}
+                        for _, tile in ipairs(targetList) do
+                            if CheckDropsAtGrid(tile.x, tile.y) then table.insert(TilesToCollect, {x = tile.x, y = tile.y}) end
+                        end
+                        
+                        if #TilesToCollect > 0 and getgenv().MasterAutoFarm then
                             local char = LP.Character
                             local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                            local currZ = hrp and hrp.Position.Z or 0
+                            local pPos = hrp and hrp.Position or Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
                             
-                            local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
-                            SafeMoveTo(dropVec) 
-                            task.wait(0.2)
-                            
-                            pcall(function() RemoteDrop:FireServer(sapSlot, sapAmount) end)
-                            pcall(function() 
-                                if UIManager and type(UIManager.FireEvent) == "function" then UIManager:FireEvent("drp", { amt = tostring(sapAmount) })
-                                else
-                                    local ManagerRemote = RS:WaitForChild("Managers"):WaitForChild("UIManager"):WaitForChild("UIPromptEvent")
-                                    ManagerRemote:FireServer(unpack({{ ButtonAction = "drp", Inputs = { amt = tostring(sapAmount) } }}))
-                                end
+                            -- Sortir dropan terdekat (Logika Teman Lu)
+                            table.sort(TilesToCollect, function(a, b)
+                                local posA = Vector3.new(a.x * getgenv().GridSize, a.y * getgenv().GridSize, currZ)
+                                local posB = Vector3.new(b.x * getgenv().GridSize, b.y * getgenv().GridSize, currZ)
+                                return (pPos - posA).Magnitude < (pPos - posB).Magnitude
                             end)
                             
-                            pcall(function()
-                                if UIManager and type(UIManager.ClosePrompt) == "function" then UIManager:ClosePrompt() end
-                                for _, gui in pairs(LP.PlayerGui:GetDescendants()) do
-                                    if gui:IsA("Frame") and string.find(string.lower(gui.Name), "prompt") then gui.Visible = false end
+                            for _, tile in ipairs(TilesToCollect) do
+                                if not getgenv().MasterAutoFarm then break end
+                                local targetVec = Vector3.new(tile.x * getgenv().GridSize, tile.y * getgenv().GridSize, currZ)
+                                SafeMoveTo(targetVec) 
+                                
+                                local waitTimeout = 0
+                                while CheckDropsAtGrid(tile.x, tile.y) and waitTimeout < 15 and getgenv().MasterAutoFarm do 
+                                    task.wait(0.1); waitTimeout = waitTimeout + 1 
                                 end
-                            end)
+                            end
                             
-                            task.wait(0.5)
+                            task.wait(0.1)
+                            -- Balik lagi ke posisi Base Awal
                             local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
                             SafeMoveTo(baseVec) 
                         end
+                        
+                        -- LOGIKA AUTO DROP SAPLING (Setelah Loot Selesai)
+                        if getgenv().AutoDropSapling and getgenv().TargetSaplingName ~= "Kosong" then
+                            local sapSlot = GetSlotByItemName(getgenv().TargetSaplingName)
+                            local sapAmount = GetItemAmountByItemName(getgenv().TargetSaplingName)
+                            
+                            if sapSlot and sapAmount >= getgenv().SaplingThreshold then
+                                local dropX, dropY
+                                if getgenv().DropTargetX and getgenv().DropTargetY then
+                                    dropX = getgenv().DropTargetX; dropY = getgenv().DropTargetY
+                                else
+                                    dropX, dropY = FindEmptyGridNearPlayer(BaseX, BaseY)
+                                end
+                                
+                                local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
+                                SafeMoveTo(dropVec) 
+                                task.wait(0.2)
+                                
+                                pcall(function() RemoteDrop:FireServer(sapSlot, sapAmount) end)
+                                pcall(function() 
+                                    if UIManager and type(UIManager.FireEvent) == "function" then UIManager:FireEvent("drp", { amt = tostring(sapAmount) })
+                                    else
+                                        local ManagerRemote = RS:WaitForChild("Managers"):WaitForChild("UIManager"):WaitForChild("UIPromptEvent")
+                                        ManagerRemote:FireServer(unpack({{ ButtonAction = "drp", Inputs = { amt = tostring(sapAmount) } }}))
+                                    end
+                                end)
+                                
+                                pcall(function()
+                                    if UIManager and type(UIManager.ClosePrompt) == "function" then UIManager:ClosePrompt() end
+                                    for _, gui in pairs(LP.PlayerGui:GetDescendants()) do
+                                        if gui:IsA("Frame") and string.find(string.lower(gui.Name), "prompt") then gui.Visible = false end
+                                    end
+                                end)
+                                
+                                task.wait(0.5)
+                                local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
+                                SafeMoveTo(baseVec) 
+                            end
+                        end
+                        
+                        -- Restart Siklus balik ke Place
+                        farmPhase = "PLACE"
                     end
-
-                end 
+                end
+            else
+                -- Kalau fitur dimatikan, reset state-nya
+                farmStartPos = nil
+                farmPhase = "PLACE"
             end
         end) -- END PCALL
         task.wait(0.1) 
