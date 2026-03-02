@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v20.0 (SMART PATHING V2 + FULL UI)" 
+getgenv().ScriptVersion = "Auto Farm v20.1 (SMART PATHING V3 + MAX DROP 200 FIX)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -147,7 +147,7 @@ SecFarm:Toggle({
 local function GetBlockOptions() local opts = {"Auto (Equipped)"}; for _, item in ipairs(ScanAvailableItems()) do table.insert(opts, item) end; return opts end
 local DropFarmBlock = SecFarm:Dropdown({ Title = "🎯 Target Farm Block (ID)", Options = GetBlockOptions(), Default = getgenv().TargetFarmBlock, Callback = function(v) getgenv().TargetFarmBlock = v end })
 SecFarm:Button({ Title = "🔄 Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
-SecFarm:Button({ Title = "📝 Select Farm Tiles (Grid Area)", Callback = function() OpenTileSelectorModal() end })
+SecFarm:Button({ Title = "📝 Select Farm Tiles", Callback = function() OpenTileSelectorModal() end })
 
 local SecCollect = Tab:Section({ Title = "🧲 Filter Auto Collect", Box = true, Opened = false })
 SecCollect:Toggle({ Title = "Only Collect Sapling (Abaikan drop lain)", Default = getgenv().AutoSaplingMode, Callback = function(v) getgenv().AutoSaplingMode = v end })
@@ -209,10 +209,10 @@ local function GetExactDropsInGrid(TargetGridX, TargetGridY)
     return exactPositions
 end
 
--- Deteksi solid lebih ramping biar bisa cari celah
+-- MEMBUAT BOT LEBIH PINTAR: Box deteksi dikecilin jadi 0.5 (cuma ngecek center grid)
 local function IsTileSolid(TargetGridX, TargetGridY, currZ)
     local searchPos = Vector3.new(TargetGridX * getgenv().GridSize, TargetGridY * getgenv().GridSize, currZ)
-    local overlap = workspace:GetPartBoundsInBox(CFrame.new(searchPos), Vector3.new(1.5, 1.5, 2))
+    local overlap = workspace:GetPartBoundsInBox(CFrame.new(searchPos), Vector3.new(0.5, 0.5, 0.5))
     
     for _, part in ipairs(overlap) do
         if part.Parent and part.CanCollide and not part:IsDescendantOf(LP.Character) then
@@ -225,7 +225,7 @@ local function IsTileSolid(TargetGridX, TargetGridY, currZ)
     return false
 end
 
--- A-Star Anti Nyerah & Pinter Cari Jalan
+-- A-Star Anti Nyerah & Pinter Cari Jalan (Micro-Sensor)
 local function FindPathAStar(startX, startY, targetX, targetY, currZ)
     if startX == targetX and startY == targetY then return {} end
     local function heuristic(x, y) return math.abs(x - targetX) + math.abs(y - targetY) end
@@ -236,7 +236,7 @@ local function FindPathAStar(startX, startY, targetX, targetY, currZ)
     gScore[startKey] = 0
     fScore[startKey] = heuristic(startX, startY)
     
-    local maxIterations = 2500 
+    local maxIterations = 3000 
     local iterations = 0
     local directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
     local solidCache = {}
@@ -364,7 +364,8 @@ local function SmartMoveTo(targetVec3, currZ)
         end
         
         local lastStep = path[#path]
-        if lastStep.x == targetX and lastStep.y == targetY then
+        -- Hanya masukin absolut targetVec3 kalau kotak tujuannya bener-bener gak ke-block
+        if lastStep.x == targetX and lastStep.y == targetY and not IsTileSolid(targetX, targetY, currZ) then
             table.insert(pathTable, targetVec3)
         end
         
@@ -433,7 +434,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     SmartMoveTo(baseVec, currZ) 
                 end
                 
-                -- [[ 4. AUTO DROP (FIXED) ]]
+                -- [[ 4. AUTO DROP (FIXED: CHUNKING MAX 200) ]]
                 if getgenv().AutoDropSapling and getgenv().TargetSaplingName ~= "Kosong" then
                     local sapSlot = GetSlotByItemID(getgenv().TargetSaplingName)
                     local sapAmount = GetItemAmountByID(getgenv().TargetSaplingName)
@@ -443,17 +444,29 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         local dropY = getgenv().DropTargetY or BaseY
                         local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
                         
+                        -- Jalan ngikutin lantai ke titik drop
                         SmartMoveTo(dropVec, currZ) 
                         task.wait(0.2)
                         
-                        pcall(function() RemoteDrop:FireServer(sapSlot, sapAmount) end)
-                        pcall(function() 
-                            if UIManager and type(UIManager.FireEvent) == "function" then UIManager:FireEvent("drp", { amt = tostring(sapAmount) })
-                            else
-                                local ManagerRemote = RS:WaitForChild("Managers"):WaitForChild("UIManager"):WaitForChild("UIPromptEvent")
-                                ManagerRemote:FireServer(unpack({{ ButtonAction = "drp", Inputs = { amt = tostring(sapAmount) } }}))
-                            end
-                        end)
+                        -- LOOP DROP BERTAHAP (Max 200 per klik)
+                        local remainingToDrop = sapAmount
+                        while remainingToDrop > 0 and getgenv().MasterAutoFarm do
+                            local currentDrop = math.min(remainingToDrop, 200)
+                            
+                            pcall(function() RemoteDrop:FireServer(sapSlot, currentDrop) end)
+                            pcall(function() 
+                                if UIManager and type(UIManager.FireEvent) == "function" then UIManager:FireEvent("drp", { amt = tostring(currentDrop) })
+                                else
+                                    local ManagerRemote = RS:WaitForChild("Managers"):WaitForChild("UIManager"):WaitForChild("UIPromptEvent")
+                                    ManagerRemote:FireServer(unpack({{ ButtonAction = "drp", Inputs = { amt = tostring(currentDrop) } }}))
+                                end
+                            end)
+                            
+                            remainingToDrop = remainingToDrop - currentDrop
+                            task.wait(0.35) -- Jeda biar nggak spam server
+                        end
+                        
+                        -- Tutup UI Prompt Drop
                         pcall(function()
                             if UIManager and type(UIManager.ClosePrompt) == "function" then UIManager:ClosePrompt() end
                             for _, gui in pairs(LP.PlayerGui:GetDescendants()) do
@@ -464,6 +477,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         workspace.Gravity = 196.2 
                         task.wait(1.5) 
                         
+                        -- Balik ke tempat farm
                         local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
                         SmartMoveTo(baseVec, currZ) 
                     end
