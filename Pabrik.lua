@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Pabrik v2.5 - SMART GLIDE & 99999 A-STAR" 
+getgenv().ScriptVersion = "Pabrik v2.6 - HARVEST SWEEP COLLECT & 99999 A-STAR" 
 
 -- ========================================== --
 -- [[ DEFAULT SETTINGS (ANTI-RESET) ]]
@@ -132,12 +132,7 @@ end
 -- [[ WIND UI MAKER DENGAN SISTEM SELIMUT ]]
 -- ========================================== --
 
--- KONTROL UTAMA PABRIK (Terbuka dari awal)
-local SecControl = Tab:Section({ 
-    Title = "🚀 Smart Pabrik Control",
-    Box = true,
-    Opened = true
-})
+local SecControl = Tab:Section({ Title = "🚀 Smart Pabrik Control", Box = true, Opened = true })
 
 SecControl:Toggle({ Title = "▶ START SMART PABRIK", Default = getgenv().EnablePabrik, Callback = function(v) getgenv().EnablePabrik = v end })
 SecControl:Toggle({ Title = "Auto Collect Sapling (Pas Break)", Default = getgenv().OnlyCollectSapling, Callback = function(v) getgenv().OnlyCollectSapling = v end })
@@ -147,19 +142,16 @@ local DropBlock = SecControl:Dropdown({ Title = "🧱 Pilih Block (Untuk Dihancu
 
 SecControl:Button({ Title = "🔄 Refresh Tas Item", Callback = function() pcall(function() local newItems = ScanAvailableItems(); DropSeed:Refresh(newItems); DropBlock:Refresh(newItems) end) end })
 
--- AREA SCAN SETUP (Tertutup / Selimut)
 local SecArea = Tab:Section({ Title = "🗺️ Area Scan Setup (X & Y)", Box = true, Opened = false })
 SecArea:Input({ Title = "Area Start X", Value = tostring(getgenv().PabrikStartX), Placeholder = tostring(getgenv().PabrikStartX), Callback = function(v) getgenv().PabrikStartX = tonumber(v) or getgenv().PabrikStartX end })
 SecArea:Input({ Title = "Area End X", Value = tostring(getgenv().PabrikEndX), Placeholder = tostring(getgenv().PabrikEndX), Callback = function(v) getgenv().PabrikEndX = tonumber(v) or getgenv().PabrikEndX end })
 SecArea:Input({ Title = "Area Start Y", Value = tostring(getgenv().PabrikStartY), Placeholder = tostring(getgenv().PabrikStartY), Callback = function(v) getgenv().PabrikStartY = tonumber(v) or getgenv().PabrikStartY end })
 SecArea:Input({ Title = "Area End Y", Value = tostring(getgenv().PabrikEndY), Placeholder = tostring(getgenv().PabrikEndY), Callback = function(v) getgenv().PabrikEndY = tonumber(v) or getgenv().PabrikEndY end })
 
--- THRESHOLD SETTINGS (Tertutup / Selimut)
-local SecThresh = Tab:Section({ Title = "⚙️ Threshold Settings", Box = true, Opened = false })
+local SecThresh = Tab:Section({ Title = "⚙️ Threshold Settings (Batas Item)", Box = true, Opened = false })
 SecThresh:Input({ Title = "Block Threshold (Sisa di tas)", Value = tostring(getgenv().BlockThreshold), Placeholder = tostring(getgenv().BlockThreshold), Callback = function(v) getgenv().BlockThreshold = tonumber(v) or getgenv().BlockThreshold end })
 SecThresh:Input({ Title = "Keep Seed Amt (Sisa di tas)", Value = tostring(getgenv().KeepSeedAmt), Placeholder = tostring(getgenv().KeepSeedAmt), Callback = function(v) getgenv().KeepSeedAmt = tonumber(v) or getgenv().KeepSeedAmt end })
 
--- POSISI BREAK & DROP (Tertutup / Selimut)
 local SecPos = Tab:Section({ Title = "📍 Posisi Break & Drop", Box = true, Opened = false })
 
 local InpBreakX = SecPos:Input({ Title = "Break Pos X", Value = tostring(getgenv().BreakPosX), Placeholder = tostring(getgenv().BreakPosX), Callback = function(v) getgenv().BreakPosX = tonumber(v) or getgenv().BreakPosX end })
@@ -172,8 +164,7 @@ SecPos:Button({
         if H then 
             local newX = math.floor(H.Position.X/4.5+0.5)
             local newY = math.floor(H.Position.Y/4.5+0.5)
-            getgenv().BreakPosX = newX
-            getgenv().BreakPosY = newY
+            getgenv().BreakPosX = newX; getgenv().BreakPosY = newY
             pcall(function() InpBreakX:Set(tostring(newX)) end) 
             pcall(function() InpBreakY:Set(tostring(newY)) end)
         end 
@@ -190,15 +181,13 @@ SecPos:Button({
         if H then 
             local newX = math.floor(H.Position.X/4.5+0.5)
             local newY = math.floor(H.Position.Y/4.5+0.5)
-            getgenv().DropPosX = newX
-            getgenv().DropPosY = newY
+            getgenv().DropPosX = newX; getgenv().DropPosY = newY
             pcall(function() InpDropX:Set(tostring(newX)) end) 
             pcall(function() InpDropY:Set(tostring(newY)) end)
         end 
     end
 })
 
--- SETTING KECEPATAN (Tertutup / Selimut)
 local SecSpeed = Tab:Section({ Title = "⏱️ Kecepatan & Delay", Box = true, Opened = false })
 SecSpeed:Input({ Title = "Walk Speed", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
 SecSpeed:Input({ Title = "Place Delay (ms)", Value = tostring(getgenv().PlaceDelay), Placeholder = tostring(getgenv().PlaceDelay), Callback = function(v) getgenv().PlaceDelay = tonumber(v) or getgenv().PlaceDelay end })
@@ -250,7 +239,6 @@ local function FindPathAStar(startX, startY, targetX, targetY)
     table.insert(openSet, {x = startX, y = startY, key = startKey})
     gScore[startKey] = 0; fScore[startKey] = heuristic(startX, startY)
     
-    -- FIX: Naikkan limit maxIterations jadi 99999 biar nggak nyerah pas jalan jauh
     local maxIterations, iterations = 99999, 0 
     local directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
 
@@ -287,7 +275,6 @@ local function FindPathAStar(startX, startY, targetX, targetY)
     return nil 
 end
 
--- FIX: Menambahkan Smooth Glide dari Auto Collect v13
 local function SmoothWalkPath(pathTable, currZ)
     if #pathTable == 0 then return end
     
@@ -348,7 +335,6 @@ local function SmoothWalkPath(pathTable, currZ)
     return true
 end
 
--- FIX: Mengganti step-by-step MoveSmartlyTo lama menjadi Smooth Glide dengan Teleport Fallback
 local function MoveSmartlyTo(targetX, targetY)
     local MyHitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
     if not MyHitbox then return false end
@@ -362,23 +348,14 @@ local function MoveSmartlyTo(targetX, targetY)
     
     if route and #route > 0 then
         local pathTable = {}
-        for _, step in ipairs(route) do
-            table.insert(pathTable, Vector3.new(step.x * getgenv().GridSize, step.y * getgenv().GridSize, currZ))
-        end
+        for _, step in ipairs(route) do table.insert(pathTable, Vector3.new(step.x * getgenv().GridSize, step.y * getgenv().GridSize, currZ)) end
         table.insert(pathTable, Vector3.new(targetX * getgenv().GridSize, targetY * getgenv().GridSize, currZ))
         return SmoothWalkPath(pathTable, currZ)
     else
-        -- FIX: Teleport instan kalau terlalu jauh atau jalan buntu karena map belum ter-render
         warn("⚠️ Map belum ter-render atau jalan buntu! Menggunakan Fast-Travel...")
         if PlayerMovement then pcall(function() PlayerMovement.InputActive = false end) end
-        
         local targetVec3 = Vector3.new(targetX * getgenv().GridSize, targetY * getgenv().GridSize, currZ)
-        if PlayerMovement then 
-            pcall(function() PlayerMovement.Position = targetVec3 end)
-        else
-            MyHitbox.CFrame = CFrame.new(targetVec3)
-        end
-        
+        if PlayerMovement then pcall(function() PlayerMovement.Position = targetVec3 end) else MyHitbox.CFrame = CFrame.new(targetVec3) end
         task.wait(0.2)
         if PlayerMovement then pcall(function() PlayerMovement.InputActive = true end) end
         return true
@@ -489,6 +466,28 @@ local function CheckDropsType(TargetGridX, TargetGridY)
         end
     end
     return hasAny, hasSapling
+end
+
+-- 🆕 FUNGSI BARU: Deteksi drop spesifik buat disapu pas Harvest
+local function GetExactDropsInGrid(TargetGridX, TargetGridY)
+    local TargetFolders = { workspace:FindFirstChild("Drops"), workspace:FindFirstChild("Gems") }
+    local exactPositions = {}
+    for _, folder in ipairs(TargetFolders) do
+        if folder then
+            for _, obj in pairs(folder:GetChildren()) do
+                local pos = nil
+                if obj:IsA("BasePart") then pos = obj.Position
+                elseif obj:IsA("Model") and obj.PrimaryPart then pos = obj.PrimaryPart.Position end
+                
+                if pos then
+                    local dX = math.floor(pos.X / getgenv().GridSize + 0.5)
+                    local dY = math.floor(pos.Y / getgenv().GridSize + 0.5)
+                    if dX == TargetGridX and dY == TargetGridY then table.insert(exactPositions, pos) end
+                end
+            end
+        end
+    end
+    return exactPositions
 end
 
 local function TrueGhostCollect(targetX, targetY, collectSaplingOnly)
@@ -620,6 +619,7 @@ task.spawn(function()
                     needToFarmBlock = true
                 end
 
+                -- [[ LOGIKA PANEN + SMART SWEEP COLLECT ]]
                 if didHarvest then
                     for i, panen in ipairs(targetPanen) do
                         if not getgenv().EnablePabrik then break end
@@ -630,7 +630,17 @@ task.spawn(function()
                                 local targetVec = Vector2.new(panen.x, panen.y)
                                 if RemoteBreak:IsA("RemoteEvent") then RemoteBreak:FireServer(targetVec) else RemoteBreak:InvokeServer(targetVec) end
                             end)
-                            task.wait(getgenv().BreakDelay)
+                            
+                            -- FIX: Tunggu item jatuh, lalu nge-sweep buat memungut drop-nya!
+                            task.wait(getgenv().BreakDelay + 0.3)
+                            local exactDrops = GetExactDropsInGrid(panen.x, panen.y)
+                            if #exactDrops > 0 then
+                                local MyHitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
+                                if MyHitbox then 
+                                    SmoothWalkPath(exactDrops, MyHitbox.Position.Z)
+                                    MoveSmartlyTo(panen.x, panen.y) -- Normalin posisi biar ga melenceng
+                                end
+                            end
                         end
                         
                         local nextPanen = targetPanen[i + 1]
