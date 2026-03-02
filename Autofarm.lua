@@ -22,8 +22,8 @@ getgenv().GridSize = getgenv().GridSize or 4.5
 
 getgenv().MasterAutoFarm = getgenv().MasterAutoFarm or false
 getgenv().AutoSaplingMode = getgenv().AutoSaplingMode or false
-getgenv().HitCount = getgenv().HitCount or 25 
-getgenv().BreakDelayMs = getgenv().BreakDelayMs or 250
+getgenv().HitCount = getgenv().HitCount or 3 
+getgenv().BreakDelayMs = getgenv().BreakDelayMs or 150
 getgenv().WaitDropMs = getgenv().WaitDropMs or 250  
 getgenv().WalkSpeed = getgenv().WalkSpeed or 25 
 
@@ -234,21 +234,29 @@ local function IsTileSolid(TargetGridX, TargetGridY, currZ)
 end
 
 -- ==============================================================
--- SAFE MOVE (Real Walk Smooth + Modfly + Anti 3D Bug)
+-- SAFE MOVE (Real Walk Smooth + Modfly + 100% Anti 3D Bug)
 -- ==============================================================
 local function SafeMoveTo(targetVec3)
     local HitboxFolder = workspace:FindFirstChild("Hitbox")
     local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
     local mover = MyHitbox or hrp
     
     if not mover then return false end
     
     if PlayerMovement then pcall(function() PlayerMovement.InputActive = false end) end
 
+    -- MATIKAN AUTO-ROTATE BAWAAN ROBLOX (Ini biang kerok jadi 3D)
+    if hum then hum.AutoRotate = false end
+
     local startCFrame = mover.CFrame
     local startPos = startCFrame.Position
-    -- Fix Z-Axis biar nggak lari ke belakang/depan (penyebab bug 3D)
+    
+    -- EKSTRAK ROTASI MURNI: Ambil rotasinya doang tanpa posisi
+    local pureRotation = startCFrame - startPos 
+    
+    -- Fix Z-Axis biar nggak lari ke belakang/depan
     targetVec3 = Vector3.new(targetVec3.X, targetVec3.Y, startPos.Z)
     
     local dist = (Vector3.new(startPos.X, startPos.Y, 0) - Vector3.new(targetVec3.X, targetVec3.Y, 0)).Magnitude 
@@ -266,8 +274,8 @@ local function SafeMoveTo(targetVec3)
         local alpha = math.clamp(t / duration, 0, 1)
         local currentPos = startPos:Lerp(targetVec3, alpha)
         
-        -- Fix bug visual 3D: Kalikan dengan rotasi awal karakter
-        local newCFrame = CFrame.new(currentPos) * startCFrame.Rotation
+        -- GABUNGKAN ROTASI YANG DIKUNCI + POSISI BARU
+        local newCFrame = pureRotation + currentPos
         mover.CFrame = newCFrame
         if hrp and MyHitbox then hrp.CFrame = newCFrame end
         
@@ -281,12 +289,13 @@ local function SafeMoveTo(targetVec3)
         end
     end
     
-    local finalCFrame = CFrame.new(targetVec3) * startCFrame.Rotation
+    local finalCFrame = pureRotation + targetVec3
     mover.CFrame = finalCFrame
     if hrp and MyHitbox then hrp.CFrame = finalCFrame end
 
-    -- Matikan Modfly
+    -- Matikan Modfly & Nyalakan lagi AutoRotate
     workspace.Gravity = oldGravity
+    if hum then hum.AutoRotate = true end
 
     if PlayerMovement then 
         pcall(function() 
