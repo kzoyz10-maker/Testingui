@@ -242,7 +242,7 @@ local function FindPathAStar(startX, startY, targetX, targetY)
     local startKey = startX .. "," .. startY
     table.insert(openSet, {x = startX, y = startY, key = startKey})
     gScore[startKey] = 0; fScore[startKey] = heuristic(startX, startY)
-    local maxIterations, iterations = 2000, 0
+    local maxIterations, iterations = 10000, 0
     local directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
 
     while #openSet > 0 do
