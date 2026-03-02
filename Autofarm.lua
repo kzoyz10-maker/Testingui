@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v19.8 (SMART A-STAR PATHING + ANTI 3D FIX DROP)" 
+getgenv().ScriptVersion = "Auto Farm v19.9 (SMART PATHING V2 + ANTI NEMBUS FIX)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -96,42 +96,8 @@ end
 getgenv().GameInventoryModule = FindHotbarModule()
 
 -- [[ ========================================================= ]] --
--- [[ MODAL UI SELECTOR GRID ]]
--- [[ ========================================================= ]] --
-local function OpenTileSelectorModal()
-    local ThemeTile = { TileOff = Color3.fromRGB(45, 55, 80), TileOn = Color3.fromRGB(240, 160, 60), TileYou = Color3.fromRGB(100, 200, 100), DarkBlue = Color3.fromRGB(25, 30, 45) }
-    local ScreenGui = Instance.new("ScreenGui"); ScreenGui.Name = "KzoyzTileModal"; ScreenGui.Parent = game:GetService("CoreGui") or LP.PlayerGui
-    local Overlay = Instance.new("TextButton"); Overlay.Parent = ScreenGui; Overlay.Size = UDim2.new(1, 0, 1, 0); Overlay.BackgroundColor3 = Color3.new(0,0,0); Overlay.BackgroundTransparency = 0.6; Overlay.Text = ""; Overlay.AutoButtonColor = false
-    local Panel = Instance.new("Frame"); Panel.Parent = Overlay; Panel.BackgroundColor3 = ThemeTile.DarkBlue; Panel.Size = UDim2.new(0, 260, 0, 340); Panel.Position = UDim2.new(0.5, 0, 0.5, 0); Panel.AnchorPoint = Vector2.new(0.5, 0.5); Instance.new("UICorner", Panel).CornerRadius = UDim.new(0, 10)
-    local Title = Instance.new("TextLabel"); Title.Parent = Panel; Title.Text = "Select Farm Tiles"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = Enum.Font.GothamBold; Title.TextSize = 16; Title.Size = UDim2.new(1, 0, 0, 40); Title.BackgroundTransparency = 1
-    local GridContainer = Instance.new("Frame"); GridContainer.Parent = Panel; GridContainer.Size = UDim2.new(0, 220, 0, 220); GridContainer.Position = UDim2.new(0.5, 0, 0, 45); GridContainer.AnchorPoint = Vector2.new(0.5, 0); GridContainer.BackgroundTransparency = 1
-    local UIGrid = Instance.new("UIGridLayout"); UIGrid.Parent = GridContainer; UIGrid.CellSize = UDim2.new(0, 40, 0, 40); UIGrid.CellPadding = UDim2.new(0, 5, 0, 5); UIGrid.SortOrder = Enum.SortOrder.LayoutOrder
-    
-    local yLevels = {3, 2, 1, 0, -1}; local xLevels = {-2, -1, 0, 1, 2} 
-    for _, y in ipairs(yLevels) do
-        for _, x in ipairs(xLevels) do
-            local Tile = Instance.new("TextButton"); Tile.Parent = GridContainer; Tile.Text = ""; Tile.Font = Enum.Font.GothamBold; Tile.TextSize = 10; Tile.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", Tile).CornerRadius = UDim.new(0, 8)
-            if x == 0 and y == 0 then Tile.Text = "I'm Here" end 
-            local isSelected = false
-            for _, v in ipairs(getgenv().SelectedTiles) do if v.x == x and v.y == y then isSelected = true; break end end
-            Tile.BackgroundColor3 = isSelected and ThemeTile.TileOn or ThemeTile.TileOff
-            Tile.MouseButton1Click:Connect(function()
-                local foundIdx = nil
-                for i, v in ipairs(getgenv().SelectedTiles) do if v.x == x and v.y == y then foundIdx = i; break end end
-                if foundIdx then table.remove(getgenv().SelectedTiles, foundIdx); Tile.BackgroundColor3 = ThemeTile.TileOff
-                else table.insert(getgenv().SelectedTiles, {x=x, y=y}); Tile.BackgroundColor3 = ThemeTile.TileOn end
-            end)
-        end
-    end
-    
-    local DoneBtn = Instance.new("TextButton"); DoneBtn.Parent = Panel; DoneBtn.BackgroundColor3 = ThemeTile.TileYou; DoneBtn.Size = UDim2.new(0, 150, 0, 40); DoneBtn.Position = UDim2.new(0.5, 0, 1, -20); DoneBtn.AnchorPoint = Vector2.new(0.5, 1); DoneBtn.Text = "Done"; DoneBtn.TextColor3 = Color3.new(1,1,1); DoneBtn.Font = Enum.Font.GothamBold; DoneBtn.TextSize = 14; Instance.new("UICorner", DoneBtn).CornerRadius = UDim.new(0, 8)
-    DoneBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
-end
-
--- [[ ========================================================= ]] --
 -- [[ WINDUI SECTIONS ]]
 -- [[ ========================================================= ]] --
-
 local SecFarm = Tab:Section({ Title = "🚜 Master Auto Farm & Collect", Box = true, Opened = true })
 
 SecFarm:Toggle({ 
@@ -148,15 +114,10 @@ SecFarm:Toggle({
 local function GetBlockOptions() local opts = {"Auto (Equipped)"}; for _, item in ipairs(ScanAvailableItems()) do table.insert(opts, item) end; return opts end
 local DropFarmBlock = SecFarm:Dropdown({ Title = "🎯 Target Farm Block (ID)", Options = GetBlockOptions(), Default = getgenv().TargetFarmBlock, Callback = function(v) getgenv().TargetFarmBlock = v end })
 SecFarm:Button({ Title = "🔄 Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
-SecFarm:Button({ Title = "📝 Select Farm Tiles (Grid Area)", Callback = function() OpenTileSelectorModal() end })
-
-local SecCollect = Tab:Section({ Title = "🧲 Filter Auto Collect", Box = true, Opened = false })
-SecCollect:Toggle({ Title = "Only Collect Sapling (Abaikan drop lain)", Default = getgenv().AutoSaplingMode, Callback = function(v) getgenv().AutoSaplingMode = v end })
 
 local SecSpeed = Tab:Section({ Title = "⏱️ Delay & Speeds", Box = true, Opened = false })
 SecSpeed:Input({ Title = "Wait Drop Muncul (ms)", Value = tostring(getgenv().WaitDropMs), Placeholder = tostring(getgenv().WaitDropMs), Callback = function(v) getgenv().WaitDropMs = tonumber(v) or getgenv().WaitDropMs end })
 SecSpeed:Input({ Title = "Walk Speed (Kecepatan Collect)", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
-SecSpeed:Input({ Title = "Hit Spam (Jumlah Pukulan)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
 
 local SecSeed = Tab:Section({ Title = "🌱 Auto Drop Seed (Sapling)", Box = true, Opened = false })
 SecSeed:Toggle({ Title = "Enable Auto Drop Sapling", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v end })
@@ -166,10 +127,7 @@ SecSeed:Input({ Title = "Drop Threshold (Amount)", Value = tostring(getgenv().Sa
 SecSeed:Button({ 
     Title = "📍 Set Posisi Drop Seed (Di Sini)", 
     Callback = function() 
-        local HitboxFolder = workspace:FindFirstChild("Hitbox")
-        local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
-        local ref = MyHitbox or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
-        
+        local ref = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
         if ref then
             getgenv().DropTargetX = math.floor(ref.Position.X / getgenv().GridSize + 0.5)
             getgenv().DropTargetY = math.floor(ref.Position.Y / getgenv().GridSize + 0.5)
@@ -179,7 +137,6 @@ SecSeed:Button({
 })
 
 local DropSeed = SecSeed:Dropdown({ Title = "Target Drop Seed (ID)", Options = ScanAvailableItems(), Default = getgenv().TargetSaplingName, Callback = function(v) getgenv().TargetSaplingName = v end })
-SecSeed:Button({ Title = "🔄 Refresh Seed List", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
 
 -- [[ ========================================================= ]] --
 -- [[ SYSTEM LOGIC & SAFE MOVEMENT ]]
@@ -188,11 +145,6 @@ local Remotes = RS:WaitForChild("Remotes")
 local RemotePlace = Remotes:WaitForChild("PlayerPlaceItem")
 local RemoteBreak = Remotes:WaitForChild("PlayerFist")
 local RemoteDrop = Remotes:WaitForChild("PlayerDrop")
-
-getgenv().KzoyzHeartbeat = RunService.Heartbeat:Connect(function()
-    local highlights = workspace:FindFirstChild("TileHighligts") or workspace:FindFirstChild("TileHighlights")
-    if highlights then pcall(function() highlights:ClearAllChildren() end) end
-end)
 
 local function GetExactDropsInGrid(TargetGridX, TargetGridY)
     local TargetFolders = { workspace:FindFirstChild("Drops"), workspace:FindFirstChild("Gems") }
@@ -204,29 +156,13 @@ local function GetExactDropsInGrid(TargetGridX, TargetGridY)
                 local pos = nil
                 if obj:IsA("BasePart") then pos = obj.Position
                 elseif obj:IsA("Model") and obj.PrimaryPart then pos = obj.PrimaryPart.Position
-                elseif obj:IsA("Model") then 
-                    local firstPart = obj:FindFirstChildWhichIsA("BasePart")
-                    if firstPart then pos = firstPart.Position end 
                 end
                 
                 if pos then
                     local dX = math.floor(pos.X / getgenv().GridSize + 0.5)
                     local dY = math.floor(pos.Y / getgenv().GridSize + 0.5)
-                    
                     if dX == TargetGridX and dY == TargetGridY then
-                        local isSapling = false
-                        for _, attrValue in pairs(obj:GetAttributes()) do 
-                            if type(attrValue) == "string" and string.find(string.lower(attrValue), "sapling") then isSapling = true; break end 
-                        end
-                        if not isSapling then
-                            for _, child in ipairs(obj:GetDescendants()) do
-                                if child:IsA("StringValue") and string.find(string.lower(child.Value), "sapling") then isSapling = true; break end
-                            end
-                        end
-                        
-                        if (getgenv().AutoSaplingMode and isSapling) or (not getgenv().AutoSaplingMode) then
-                            table.insert(exactPositions, pos)
-                        end
+                        table.insert(exactPositions, pos)
                     end
                 end
             end
@@ -235,71 +171,76 @@ local function GetExactDropsInGrid(TargetGridX, TargetGridY)
     return exactPositions
 end
 
+-- FIX 1: Deteksi solid lebih ramping biar bisa cari celah
 local function IsTileSolid(TargetGridX, TargetGridY, currZ)
     local searchPos = Vector3.new(TargetGridX * getgenv().GridSize, TargetGridY * getgenv().GridSize, currZ)
-    local overlap = workspace:GetPartBoundsInBox(CFrame.new(searchPos), Vector3.new(2, 2, 2))
+    -- Hitbox deteksi diperkecil jadi 1.5, supaya ngga nyangkut di tembok tetangga
+    local overlap = workspace:GetPartBoundsInBox(CFrame.new(searchPos), Vector3.new(1.5, 1.5, 2))
+    
     for _, part in ipairs(overlap) do
-        if part.Parent 
-           and not part:IsDescendantOf(LP.Character) 
-           and part.Parent.Name ~= "Drops" 
-           and part.Parent.Name ~= "Gems" 
-           and part.Parent.Name ~= "Hitbox" 
-           and part.Parent.Name ~= "TileHighlights" then
-           
-           if part.CanCollide or part.Name == "Foreground" or part.Parent.Name == "Tiles" or part.Parent.Name == "Blocks" then
-               return true
-           end
+        if part.Parent and part.CanCollide and not part:IsDescendantOf(LP.Character) then
+            local pName = part.Parent.Name
+            if pName ~= "Drops" and pName ~= "Gems" and pName ~= "Hitbox" and pName ~= "TileHighlights" then
+                return true
+            end
         end
     end
     return false
 end
 
--- ==============================================================
--- FUNGSI BARU: A-STAR PATHFINDING UNTUK AUTO DROP / SMART WALK
--- ==============================================================
+-- FIX 2: A-Star Anti Nyerah & Pinter Cari Jalan
 local function FindPathAStar(startX, startY, targetX, targetY, currZ)
     if startX == targetX and startY == targetY then return {} end
     local function heuristic(x, y) return math.abs(x - targetX) + math.abs(y - targetY) end
+    
     local openSet, closedSet, cameFrom, gScore, fScore = {}, {}, {}, {}, {}
     local startKey = startX .. "," .. startY
     table.insert(openSet, {x = startX, y = startY, key = startKey})
-    gScore[startKey] = 0; fScore[startKey] = heuristic(startX, startY)
-    local maxIterations, iterations = 800, 0
-    local directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
+    gScore[startKey] = 0
+    fScore[startKey] = heuristic(startX, startY)
     
+    local maxIterations = 2500 -- Mikir lebih jauh
+    local iterations = 0
+    local directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
     local solidCache = {}
+    
+    local bestNode = {x = startX, y = startY, key = startKey}
+    local bestH = fScore[startKey]
 
     while #openSet > 0 do
         iterations = iterations + 1; if iterations > maxIterations then break end
-        local current, currentIndex = openSet[1], 1
-        for i = 2, #openSet do if fScore[openSet[i].key] < fScore[current.key] then current = openSet[i]; currentIndex = i end end
         
-        if current.x == targetX and current.y == targetY then
-            local path, currKey = {}, current.key
-            while cameFrom[currKey] do 
-                local node = cameFrom[currKey]
-                table.insert(path, 1, {x = current.x, y = current.y})
-                current = node
-                currKey = node.x .. "," .. node.y 
-            end
-            return path
+        local current, currentIndex = openSet[1], 1
+        for i = 2, #openSet do 
+            if fScore[openSet[i].key] < fScore[current.key] then current = openSet[i]; currentIndex = i end 
         end
         
-        table.remove(openSet, currentIndex); closedSet[current.key] = true
+        -- Catat posisi paling dekat ke target kalau-kalau targetnya di dalam tembok
+        local currentH = heuristic(current.x, current.y)
+        if currentH < bestH then
+            bestH = currentH
+            bestNode = current
+        end
+        
+        if current.x == targetX and current.y == targetY then
+            bestNode = current
+            break -- Ketemu jalannya
+        end
+        
+        table.remove(openSet, currentIndex)
+        closedSet[current.key] = true
         
         for _, dir in ipairs(directions) do
             local nextX, nextY = current.x + dir[1], current.y + dir[2]
             local nextKey = nextX .. "," .. nextY
             
             if closedSet[nextKey] then continue end
+            if solidCache[nextKey] == nil then solidCache[nextKey] = IsTileSolid(nextX, nextY, currZ) end
             
-            -- Cache biar GetPartBoundsInBox gak bikin lag
-            if solidCache[nextKey] == nil then
-                solidCache[nextKey] = IsTileSolid(nextX, nextY, currZ)
-            end
-            
-            if not (nextX == targetX and nextY == targetY) and solidCache[nextKey] then 
-                closedSet[nextKey] = true; continue 
+            -- Jangan lewatin block solid
+            if solidCache[nextKey] then 
+                closedSet[nextKey] = true
+                continue 
             end
             
             local tentative_gScore = gScore[current.key] + 1
@@ -314,35 +255,37 @@ local function FindPathAStar(startX, startY, targetX, targetY, currZ)
             end
         end
     end
-    return nil 
+    
+    -- Konstruksi jalan dari node terbaik (hindari nembus)
+    local path = {}
+    local currKey = bestNode.key
+    local currNode = bestNode
+    while cameFrom[currKey] do
+        table.insert(path, 1, {x = currNode.x, y = currNode.y})
+        currNode = cameFrom[currKey]
+        currKey = currNode.key
+    end
+    return path
 end
 
--- ==============================================================
--- FUNGSI SWEEP PATH (KUMPULIN SEMUA / GLIDE MENGIKUTI JALUR A-STAR)
--- ==============================================================
 local function SafeMovePath(pathTable, currZ)
     if #pathTable == 0 then return end
     
-    local HitboxFolder = workspace:FindFirstChild("Hitbox")
-    local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    local mover = MyHitbox or hrp
-    
-    if not mover then return false end
+    if not hrp then return false end
     
     if PlayerMovement then pcall(function() PlayerMovement.InputActive = false end) end
 
     local oldGravity = workspace.Gravity
     workspace.Gravity = 0
 
-    local startPos = mover.Position
+    local startPos = hrp.Position
     if PlayerMovement and PlayerMovement.Position then startPos = PlayerMovement.Position end
 
     for _, targetPos in ipairs(pathTable) do
         if not getgenv().MasterAutoFarm then break end
         
         local targetVec3 = Vector3.new(targetPos.X, targetPos.Y, startPos.Z)
-        
         local dist = (Vector3.new(startPos.X, startPos.Y, 0) - Vector3.new(targetVec3.X, targetVec3.Y, 0)).Magnitude 
         local duration = dist / getgenv().WalkSpeed
         if duration < 0.05 then duration = 0.05 end
@@ -356,43 +299,21 @@ local function SafeMovePath(pathTable, currZ)
             
             if PlayerMovement then 
                 pcall(function() 
-                    PlayerMovement.Position = currentPos
-                    PlayerMovement.VelocityX = 0 
-                    PlayerMovement.VelocityY = 0 
-                    PlayerMovement.VelocityZ = 0 
+                    PlayerMovement.Position = currentPos; PlayerMovement.VelocityX = 0; PlayerMovement.VelocityY = 0 
                 end)
             else
-                local fixedRot = mover.CFrame - mover.CFrame.Position
-                local newCFrame = fixedRot + currentPos
-                mover.CFrame = newCFrame
-                if hrp and MyHitbox then hrp.CFrame = newCFrame end
+                hrp.CFrame = (hrp.CFrame - hrp.CFrame.Position) + currentPos
             end
         end
         startPos = targetVec3
     end
     
-    if PlayerMovement then 
-        pcall(function() 
-            PlayerMovement.VelocityX = 0 
-            PlayerMovement.VelocityY = 0 
-            PlayerMovement.VelocityZ = 0 
-            PlayerMovement.InputActive = true 
-        end)
-    end
+    if PlayerMovement then pcall(function() PlayerMovement.InputActive = true end) end
     workspace.Gravity = oldGravity
 end
 
-local function SafeMoveTo(targetVec3)
-    SafeMovePath({targetVec3}, targetVec3.Z)
-end
-
--- ==============================================================
--- SMART MOVE TO (AUTO A-STAR ROUTING UNTUK JAUH & DROP)
--- ==============================================================
 local function SmartMoveTo(targetVec3, currZ)
-    local HitboxFolder = workspace:FindFirstChild("Hitbox")
-    local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
-    local mover = MyHitbox or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
+    local mover = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     if not mover then return false end
     
     local startX = math.floor(mover.Position.X / getgenv().GridSize + 0.5)
@@ -402,17 +323,20 @@ local function SmartMoveTo(targetVec3, currZ)
     
     local path = FindPathAStar(startX, startY, targetX, targetY, currZ)
     
+    -- FIX 3: STRICT PATHING, Gak bakal nembus kalau buntu
     if path and #path > 0 then
         local pathTable = {}
         for _, step in ipairs(path) do
             table.insert(pathTable, Vector3.new(step.x * getgenv().GridSize, step.y * getgenv().GridSize, currZ))
         end
-        -- Push final koordinat biar bener2 nempel di target
-        table.insert(pathTable, targetVec3)
+        
+        -- Cuma paksa maju ke kordinat absolut kalau grid terakhir bener-bener kosong/sesuai
+        local lastStep = path[#path]
+        if lastStep.x == targetX and lastStep.y == targetY then
+            table.insert(pathTable, targetVec3)
+        end
+        
         SafeMovePath(pathTable, currZ)
-    else
-        -- Kalo dekat atau ga ada jalan terdeteksi, jalan biasa (tembus/glide)
-        SafeMoveTo(targetVec3)
     end
 end
 
@@ -422,11 +346,7 @@ end
 getgenv().KzoyzFarmLoop = task.spawn(function() 
     while true do 
         if getgenv().MasterAutoFarm then 
-            
-            local HitboxFolder = workspace:FindFirstChild("Hitbox")
-            local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
-            local ref = MyHitbox or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
-            
+            local ref = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
             if ref then 
                 local BaseX = math.floor(ref.Position.X / getgenv().GridSize + 0.5)
                 local BaseY = math.floor(ref.Position.Y / getgenv().GridSize + 0.5)
@@ -438,8 +358,6 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                 else
                     if getgenv().GameInventoryModule and getgenv().GameInventoryModule.GetSelectedHotbarItem then 
                         _, ItemIndex = getgenv().GameInventoryModule.GetSelectedHotbarItem() 
-                    elseif getgenv().GameInventoryModule and getgenv().GameInventoryModule.GetSelectedItem then 
-                        _, ItemIndex = getgenv().GameInventoryModule.GetSelectedItem() 
                     end 
                 end
                 
@@ -453,7 +371,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     end
                 end
 
-                -- [[ 2. BREAK (HIT COUNT DENGAN DELAY 150MS) ]]
+                -- [[ 2. BREAK ]]
                 for _, offset in ipairs(getgenv().SelectedTiles) do 
                     if not getgenv().MasterAutoFarm then break end 
                     local TGrid = Vector2.new(BaseX + offset.x, BaseY + offset.y) 
@@ -466,32 +384,24 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     end
                 end
                 
-                -- [[ 3. SMART AUTO COLLECT (SWEEP MODE) ]]
+                -- [[ 3. COLLECT SWEEP ]]
                 task.wait(getgenv().WaitDropMs / 1000) 
-                
                 local ExactDropsToCollect = {}
                 for _, offset in ipairs(getgenv().SelectedTiles) do
                     local tx = BaseX + offset.x
                     local ty = BaseY + offset.y
-                    
                     if not IsTileSolid(tx, ty, currZ) then 
-                        local dropsInGrid = GetExactDropsInGrid(tx, ty)
-                        for _, dropPos in ipairs(dropsInGrid) do
-                            table.insert(ExactDropsToCollect, dropPos)
-                        end
+                        for _, dropPos in ipairs(GetExactDropsInGrid(tx, ty)) do table.insert(ExactDropsToCollect, dropPos) end
                     end
                 end
                 
                 if #ExactDropsToCollect > 0 and getgenv().MasterAutoFarm then
-                    -- GLIDING MENYAPU SEMUA TITIK DROP
                     SafeMovePath(ExactDropsToCollect, currZ)
-                    
-                    -- Balik ke posisi tengah tempat bot farming semula (PAKAI SMART A-STAR BIAR GA NABRAK)
                     local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
                     SmartMoveTo(baseVec, currZ) 
                 end
                 
-                -- [[ 4. AUTO DROP SAPLING ]]
+                -- [[ 4. AUTO DROP (FIXED) ]]
                 if getgenv().AutoDropSapling and getgenv().TargetSaplingName ~= "Kosong" then
                     local sapSlot = GetSlotByItemID(getgenv().TargetSaplingName)
                     local sapAmount = GetItemAmountByID(getgenv().TargetSaplingName)
@@ -501,7 +411,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         local dropY = getgenv().DropTargetY or BaseY
                         local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
                         
-                        -- Pergi ke titik drop dengan algoritma cari celah / menghindar
+                        -- Berjalan menelusuri labirin ke spot Drop
                         SmartMoveTo(dropVec, currZ) 
                         task.wait(0.2)
                         
@@ -513,7 +423,6 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                                 ManagerRemote:FireServer(unpack({{ ButtonAction = "drp", Inputs = { amt = tostring(sapAmount) } }}))
                             end
                         end)
-                        
                         pcall(function()
                             if UIManager and type(UIManager.ClosePrompt) == "function" then UIManager:ClosePrompt() end
                             for _, gui in pairs(LP.PlayerGui:GetDescendants()) do
@@ -521,11 +430,11 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                             end
                         end)
                         
-                        -- [[ PERBAIKAN DI SINI: NORMALKAN GRAVITASI DAN TAMBAH DELAY ]]
+                        -- Normalin gravitasi dan kasih jeda biar barang mendarat!
                         workspace.Gravity = 196.2 
                         task.wait(1.5) 
                         
-                        -- Balik ke tempat farm semula juga pakai A-Star menghindar
+                        -- Balik nyelip ke tempat farm
                         local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
                         SmartMoveTo(baseVec, currZ) 
                     end
