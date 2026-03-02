@@ -22,7 +22,7 @@ getgenv().GridSize = getgenv().GridSize or 4.5
 
 getgenv().MasterAutoFarm = getgenv().MasterAutoFarm or false
 getgenv().AutoSaplingMode = getgenv().AutoSaplingMode or false
-getgenv().HitCount = getgenv().HitCount or 25 -- Default 25 Burst (Spam Pukulan)
+getgenv().HitCount = getgenv().HitCount or 25 
 getgenv().BreakDelayMs = getgenv().BreakDelayMs or 250
 getgenv().WaitDropMs = getgenv().WaitDropMs or 250  
 getgenv().WalkSpeed = getgenv().WalkSpeed or 25 
@@ -46,7 +46,7 @@ local UIManager
 pcall(function() UIManager = require(RS:WaitForChild("Managers"):WaitForChild("UIManager")) end)
 
 -- [[ ========================================================= ]] --
--- [[ HELPER FUNCTIONS (KEMBALI KE ID BASE, PALING ANTI ERROR) ]]
+-- [[ HELPER FUNCTIONS ]]
 -- [[ ========================================================= ]] --
 local function GetSlotByItemID(targetID)
     if not InventoryMod or not InventoryMod.Stacks then return nil end
@@ -150,7 +150,7 @@ local DropFarmBlock = SecFarm:Dropdown({ Title = "🎯 Target Farm Block (ID)", 
 SecFarm:Button({ Title = "🔄 Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
 SecFarm:Button({ Title = "📝 Select Farm Tiles (Grid Area)", Callback = function() OpenTileSelectorModal() end })
 
-local SecCollect = Tab:Section({ Title = "🧲 Filter Autffo Collect", Box = true, Opened = false })
+local SecCollect = Tab:Section({ Title = "🧲 Filter Auto Collect", Box = true, Opened = false })
 SecCollect:Toggle({ Title = "Only Collect Sapling (Abaikan drop lain)", Default = getgenv().AutoSaplingMode, Callback = function(v) getgenv().AutoSaplingMode = v end })
 
 local SecSpeed = Tab:Section({ Title = "⏱️ Delay & Speeds", Box = true, Opened = false })
@@ -211,8 +211,30 @@ local function CheckDropsAtGrid(TargetGridX, TargetGridY)
     if getgenv().AutoSaplingMode then return foundSapling else return foundAny end
 end
 
+-- FUNGSI BARU: Cek apakah grid ada Block (biar nggak nembus / maksa ambil drop)
+local function IsTileSolid(TargetGridX, TargetGridY, currZ)
+    local searchPos = Vector3.new(TargetGridX * getgenv().GridSize, TargetGridY * getgenv().GridSize, currZ)
+    local overlap = workspace:GetPartBoundsInBox(CFrame.new(searchPos), Vector3.new(2, 2, 2))
+    for _, part in ipairs(overlap) do
+        -- Pastikan part ada di workspace dan bukan drop/gems/hitbox/karakter
+        if part.Parent 
+           and not part:IsDescendantOf(LP.Character) 
+           and part.Parent.Name ~= "Drops" 
+           and part.Parent.Name ~= "Gems" 
+           and part.Parent.Name ~= "Hitbox" 
+           and part.Parent.Name ~= "TileHighlights" then
+           
+           -- Asumsi: Kalau part solid / CanCollide true / namanya spesifik, itu berarti Block
+           if part.CanCollide or part.Name == "Foreground" or part.Parent.Name == "Tiles" or part.Parent.Name == "Blocks" then
+               return true
+           end
+        end
+    end
+    return false
+end
+
 -- ==============================================================
--- SAFE MOVE (Real Walk, Anti-Drift, No Anchor -> Bebas Bug 0,0,0)
+-- SAFE MOVE (Real Walk Smooth + Modfly + Anti 3D Bug)
 -- ==============================================================
 local function SafeMoveTo(targetVec3)
     local HitboxFolder = workspace:FindFirstChild("Hitbox")
@@ -224,10 +246,18 @@ local function SafeMoveTo(targetVec3)
     
     if PlayerMovement then pcall(function() PlayerMovement.InputActive = false end) end
 
-    local startPos = mover.Position
+    local startCFrame = mover.CFrame
+    local startPos = startCFrame.Position
+    -- Fix Z-Axis biar nggak lari ke belakang/depan (penyebab bug 3D)
+    targetVec3 = Vector3.new(targetVec3.X, targetVec3.Y, startPos.Z)
+    
     local dist = (Vector3.new(startPos.X, startPos.Y, 0) - Vector3.new(targetVec3.X, targetVec3.Y, 0)).Magnitude 
     local duration = dist / getgenv().WalkSpeed
     if duration < 0.05 then duration = 0.05 end
+
+    -- Aktifkan Modfly Sementara (Anti Jatuh)
+    local oldGravity = workspace.Gravity
+    workspace.Gravity = 0
 
     local t = 0
     while t < duration and getgenv().MasterAutoFarm do
@@ -236,8 +266,10 @@ local function SafeMoveTo(targetVec3)
         local alpha = math.clamp(t / duration, 0, 1)
         local currentPos = startPos:Lerp(targetVec3, alpha)
         
-        mover.CFrame = CFrame.new(currentPos)
-        if hrp and MyHitbox then hrp.CFrame = CFrame.new(currentPos) end
+        -- Fix bug visual 3D: Kalikan dengan rotasi awal karakter
+        local newCFrame = CFrame.new(currentPos) * startCFrame.Rotation
+        mover.CFrame = newCFrame
+        if hrp and MyHitbox then hrp.CFrame = newCFrame end
         
         if PlayerMovement then 
             pcall(function() 
@@ -249,8 +281,12 @@ local function SafeMoveTo(targetVec3)
         end
     end
     
-    mover.CFrame = CFrame.new(targetVec3)
-    if hrp and MyHitbox then hrp.CFrame = CFrame.new(targetVec3) end
+    local finalCFrame = CFrame.new(targetVec3) * startCFrame.Rotation
+    mover.CFrame = finalCFrame
+    if hrp and MyHitbox then hrp.CFrame = finalCFrame end
+
+    -- Matikan Modfly
+    workspace.Gravity = oldGravity
 
     if PlayerMovement then 
         pcall(function() 
@@ -265,7 +301,7 @@ local function SafeMoveTo(targetVec3)
 end
 
 -- ==============================================================
--- MAIN FARM LOOP (KEMBALI KE BASIC YANG PASTI MUKUL)
+-- MAIN FARM LOOP (FIX 150MS BREAK & AUTO COLLECT)
 -- ==============================================================
 getgenv().KzoyzFarmLoop = task.spawn(function() 
     while true do 
@@ -301,7 +337,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     end
                 end
 
-                -- [[ 2. BREAK (DENGAN SISTEM BURST / SPAM KAYA TEMEN LU) ]]
+                -- [[ 2. BREAK (HIT COUNT 150MS DEFAULT, BUKAN BURST) ]]
                 for _, offset in ipairs(getgenv().SelectedTiles) do 
                     if not getgenv().MasterAutoFarm then break end 
                     local TGrid = Vector2.new(BaseX + offset.x, BaseY + offset.y) 
@@ -310,17 +346,22 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     for hit = 1, hits do 
                         if not getgenv().MasterAutoFarm then break end 
                         pcall(function() RemoteBreak:FireServer(TGrid) end)
+                        task.wait(0.15) -- Delay default 150ms tiap pukulan (anti burst)
                     end
-                    task.wait(getgenv().BreakDelayMs / 1000) 
                 end
                 
-                -- [[ 3. AUTO COLLECT ]]
+                -- [[ 3. AUTO COLLECT (DENGAN PENGECEKAN BLOCK) ]]
                 task.wait(getgenv().WaitDropMs / 1000) 
                 
                 local TilesToCollect = {}
                 for _, offset in ipairs(getgenv().SelectedTiles) do
-                    local tx = BaseX + offset.x; local ty = BaseY + offset.y
-                    if CheckDropsAtGrid(tx, ty) then table.insert(TilesToCollect, {x = tx, y = ty}) end
+                    local tx = BaseX + offset.x
+                    local ty = BaseY + offset.y
+                    
+                    -- JIKA TILE KOSONG (Tidak ada block) DAN ADA DROP -> Collect!
+                    if not IsTileSolid(tx, ty, currZ) and CheckDropsAtGrid(tx, ty) then 
+                        table.insert(TilesToCollect, {x = tx, y = ty}) 
+                    end
                 end
                 
                 if #TilesToCollect > 0 and getgenv().MasterAutoFarm then
@@ -331,7 +372,8 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         
                         local waitTimeout = 0
                         while CheckDropsAtGrid(tile.x, tile.y) and waitTimeout < 15 and getgenv().MasterAutoFarm do 
-                            task.wait(0.1); waitTimeout = waitTimeout + 1 
+                            task.wait(0.1)
+                            waitTimeout = waitTimeout + 1 
                         end
                     end
                     
