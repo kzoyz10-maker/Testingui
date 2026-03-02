@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v19.9 (SMART PATHING V2 + ANTI NEMBUS FIX)" 
+getgenv().ScriptVersion = "Auto Farm v20.0 (SMART PATHING V2 + FULL UI)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -96,6 +96,39 @@ end
 getgenv().GameInventoryModule = FindHotbarModule()
 
 -- [[ ========================================================= ]] --
+-- [[ MODAL UI SELECTOR GRID ]]
+-- [[ ========================================================= ]] --
+local function OpenTileSelectorModal()
+    local ThemeTile = { TileOff = Color3.fromRGB(45, 55, 80), TileOn = Color3.fromRGB(240, 160, 60), TileYou = Color3.fromRGB(100, 200, 100), DarkBlue = Color3.fromRGB(25, 30, 45) }
+    local ScreenGui = Instance.new("ScreenGui"); ScreenGui.Name = "KzoyzTileModal"; ScreenGui.Parent = game:GetService("CoreGui") or LP.PlayerGui
+    local Overlay = Instance.new("TextButton"); Overlay.Parent = ScreenGui; Overlay.Size = UDim2.new(1, 0, 1, 0); Overlay.BackgroundColor3 = Color3.new(0,0,0); Overlay.BackgroundTransparency = 0.6; Overlay.Text = ""; Overlay.AutoButtonColor = false
+    local Panel = Instance.new("Frame"); Panel.Parent = Overlay; Panel.BackgroundColor3 = ThemeTile.DarkBlue; Panel.Size = UDim2.new(0, 260, 0, 340); Panel.Position = UDim2.new(0.5, 0, 0.5, 0); Panel.AnchorPoint = Vector2.new(0.5, 0.5); Instance.new("UICorner", Panel).CornerRadius = UDim.new(0, 10)
+    local Title = Instance.new("TextLabel"); Title.Parent = Panel; Title.Text = "Select Farm Tiles"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = Enum.Font.GothamBold; Title.TextSize = 16; Title.Size = UDim2.new(1, 0, 0, 40); Title.BackgroundTransparency = 1
+    local GridContainer = Instance.new("Frame"); GridContainer.Parent = Panel; GridContainer.Size = UDim2.new(0, 220, 0, 220); GridContainer.Position = UDim2.new(0.5, 0, 0, 45); GridContainer.AnchorPoint = Vector2.new(0.5, 0); GridContainer.BackgroundTransparency = 1
+    local UIGrid = Instance.new("UIGridLayout"); UIGrid.Parent = GridContainer; UIGrid.CellSize = UDim2.new(0, 40, 0, 40); UIGrid.CellPadding = UDim2.new(0, 5, 0, 5); UIGrid.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    local yLevels = {3, 2, 1, 0, -1}; local xLevels = {-2, -1, 0, 1, 2} 
+    for _, y in ipairs(yLevels) do
+        for _, x in ipairs(xLevels) do
+            local Tile = Instance.new("TextButton"); Tile.Parent = GridContainer; Tile.Text = ""; Tile.Font = Enum.Font.GothamBold; Tile.TextSize = 10; Tile.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", Tile).CornerRadius = UDim.new(0, 8)
+            if x == 0 and y == 0 then Tile.Text = "I'm Here" end 
+            local isSelected = false
+            for _, v in ipairs(getgenv().SelectedTiles) do if v.x == x and v.y == y then isSelected = true; break end end
+            Tile.BackgroundColor3 = isSelected and ThemeTile.TileOn or ThemeTile.TileOff
+            Tile.MouseButton1Click:Connect(function()
+                local foundIdx = nil
+                for i, v in ipairs(getgenv().SelectedTiles) do if v.x == x and v.y == y then foundIdx = i; break end end
+                if foundIdx then table.remove(getgenv().SelectedTiles, foundIdx); Tile.BackgroundColor3 = ThemeTile.TileOff
+                else table.insert(getgenv().SelectedTiles, {x=x, y=y}); Tile.BackgroundColor3 = ThemeTile.TileOn end
+            end)
+        end
+    end
+    
+    local DoneBtn = Instance.new("TextButton"); DoneBtn.Parent = Panel; DoneBtn.BackgroundColor3 = ThemeTile.TileYou; DoneBtn.Size = UDim2.new(0, 150, 0, 40); DoneBtn.Position = UDim2.new(0.5, 0, 1, -20); DoneBtn.AnchorPoint = Vector2.new(0.5, 1); DoneBtn.Text = "Done"; DoneBtn.TextColor3 = Color3.new(1,1,1); DoneBtn.Font = Enum.Font.GothamBold; DoneBtn.TextSize = 14; Instance.new("UICorner", DoneBtn).CornerRadius = UDim.new(0, 8)
+    DoneBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+end
+
+-- [[ ========================================================= ]] --
 -- [[ WINDUI SECTIONS ]]
 -- [[ ========================================================= ]] --
 local SecFarm = Tab:Section({ Title = "🚜 Master Auto Farm & Collect", Box = true, Opened = true })
@@ -114,16 +147,20 @@ SecFarm:Toggle({
 local function GetBlockOptions() local opts = {"Auto (Equipped)"}; for _, item in ipairs(ScanAvailableItems()) do table.insert(opts, item) end; return opts end
 local DropFarmBlock = SecFarm:Dropdown({ Title = "🎯 Target Farm Block (ID)", Options = GetBlockOptions(), Default = getgenv().TargetFarmBlock, Callback = function(v) getgenv().TargetFarmBlock = v end })
 SecFarm:Button({ Title = "🔄 Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
+SecFarm:Button({ Title = "📝 Select Farm Tiles (Grid Area)", Callback = function() OpenTileSelectorModal() end })
+
+local SecCollect = Tab:Section({ Title = "🧲 Filter Auto Collect", Box = true, Opened = false })
+SecCollect:Toggle({ Title = "Only Collect Sapling (Abaikan drop lain)", Default = getgenv().AutoSaplingMode, Callback = function(v) getgenv().AutoSaplingMode = v end })
 
 local SecSpeed = Tab:Section({ Title = "⏱️ Delay & Speeds", Box = true, Opened = false })
 SecSpeed:Input({ Title = "Wait Drop Muncul (ms)", Value = tostring(getgenv().WaitDropMs), Placeholder = tostring(getgenv().WaitDropMs), Callback = function(v) getgenv().WaitDropMs = tonumber(v) or getgenv().WaitDropMs end })
 SecSpeed:Input({ Title = "Walk Speed (Kecepatan Collect)", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
+SecSpeed:Input({ Title = "Hit Spam (Jumlah Pukulan)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
 
 local SecSeed = Tab:Section({ Title = "🌱 Auto Drop Seed (Sapling)", Box = true, Opened = false })
 SecSeed:Toggle({ Title = "Enable Auto Drop Sapling", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v end })
 SecSeed:Input({ Title = "Drop Threshold (Amount)", Value = tostring(getgenv().SaplingThreshold), Placeholder = tostring(getgenv().SaplingThreshold), Callback = function(v) getgenv().SaplingThreshold = tonumber(v) or getgenv().SaplingThreshold end })
 
--- TOMBOL SET POSISI BARU:
 SecSeed:Button({ 
     Title = "📍 Set Posisi Drop Seed (Di Sini)", 
     Callback = function() 
@@ -137,6 +174,7 @@ SecSeed:Button({
 })
 
 local DropSeed = SecSeed:Dropdown({ Title = "Target Drop Seed (ID)", Options = ScanAvailableItems(), Default = getgenv().TargetSaplingName, Callback = function(v) getgenv().TargetSaplingName = v end })
+SecSeed:Button({ Title = "🔄 Refresh Seed List", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
 
 -- [[ ========================================================= ]] --
 -- [[ SYSTEM LOGIC & SAFE MOVEMENT ]]
@@ -171,10 +209,9 @@ local function GetExactDropsInGrid(TargetGridX, TargetGridY)
     return exactPositions
 end
 
--- FIX 1: Deteksi solid lebih ramping biar bisa cari celah
+-- Deteksi solid lebih ramping biar bisa cari celah
 local function IsTileSolid(TargetGridX, TargetGridY, currZ)
     local searchPos = Vector3.new(TargetGridX * getgenv().GridSize, TargetGridY * getgenv().GridSize, currZ)
-    -- Hitbox deteksi diperkecil jadi 1.5, supaya ngga nyangkut di tembok tetangga
     local overlap = workspace:GetPartBoundsInBox(CFrame.new(searchPos), Vector3.new(1.5, 1.5, 2))
     
     for _, part in ipairs(overlap) do
@@ -188,7 +225,7 @@ local function IsTileSolid(TargetGridX, TargetGridY, currZ)
     return false
 end
 
--- FIX 2: A-Star Anti Nyerah & Pinter Cari Jalan
+-- A-Star Anti Nyerah & Pinter Cari Jalan
 local function FindPathAStar(startX, startY, targetX, targetY, currZ)
     if startX == targetX and startY == targetY then return {} end
     local function heuristic(x, y) return math.abs(x - targetX) + math.abs(y - targetY) end
@@ -199,7 +236,7 @@ local function FindPathAStar(startX, startY, targetX, targetY, currZ)
     gScore[startKey] = 0
     fScore[startKey] = heuristic(startX, startY)
     
-    local maxIterations = 2500 -- Mikir lebih jauh
+    local maxIterations = 2500 
     local iterations = 0
     local directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
     local solidCache = {}
@@ -215,7 +252,6 @@ local function FindPathAStar(startX, startY, targetX, targetY, currZ)
             if fScore[openSet[i].key] < fScore[current.key] then current = openSet[i]; currentIndex = i end 
         end
         
-        -- Catat posisi paling dekat ke target kalau-kalau targetnya di dalam tembok
         local currentH = heuristic(current.x, current.y)
         if currentH < bestH then
             bestH = currentH
@@ -224,7 +260,7 @@ local function FindPathAStar(startX, startY, targetX, targetY, currZ)
         
         if current.x == targetX and current.y == targetY then
             bestNode = current
-            break -- Ketemu jalannya
+            break 
         end
         
         table.remove(openSet, currentIndex)
@@ -237,7 +273,6 @@ local function FindPathAStar(startX, startY, targetX, targetY, currZ)
             if closedSet[nextKey] then continue end
             if solidCache[nextKey] == nil then solidCache[nextKey] = IsTileSolid(nextX, nextY, currZ) end
             
-            -- Jangan lewatin block solid
             if solidCache[nextKey] then 
                 closedSet[nextKey] = true
                 continue 
@@ -256,7 +291,6 @@ local function FindPathAStar(startX, startY, targetX, targetY, currZ)
         end
     end
     
-    -- Konstruksi jalan dari node terbaik (hindari nembus)
     local path = {}
     local currKey = bestNode.key
     local currNode = bestNode
@@ -323,14 +357,12 @@ local function SmartMoveTo(targetVec3, currZ)
     
     local path = FindPathAStar(startX, startY, targetX, targetY, currZ)
     
-    -- FIX 3: STRICT PATHING, Gak bakal nembus kalau buntu
     if path and #path > 0 then
         local pathTable = {}
         for _, step in ipairs(path) do
             table.insert(pathTable, Vector3.new(step.x * getgenv().GridSize, step.y * getgenv().GridSize, currZ))
         end
         
-        -- Cuma paksa maju ke kordinat absolut kalau grid terakhir bener-bener kosong/sesuai
         local lastStep = path[#path]
         if lastStep.x == targetX and lastStep.y == targetY then
             table.insert(pathTable, targetVec3)
@@ -411,7 +443,6 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         local dropY = getgenv().DropTargetY or BaseY
                         local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
                         
-                        -- Berjalan menelusuri labirin ke spot Drop
                         SmartMoveTo(dropVec, currZ) 
                         task.wait(0.2)
                         
@@ -430,11 +461,9 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                             end
                         end)
                         
-                        -- Normalin gravitasi dan kasih jeda biar barang mendarat!
                         workspace.Gravity = 196.2 
                         task.wait(1.5) 
                         
-                        -- Balik nyelip ke tempat farm
                         local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
                         SmartMoveTo(baseVec, currZ) 
                     end
