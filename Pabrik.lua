@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Pabrik v2.4 - WINDUI COLLAPSIBLE & INPUT FIXED" 
+getgenv().ScriptVersion = "Pabrik v2.5 - SMART GLIDE & 99999 A-STAR" 
 
 -- ========================================== --
 -- [[ DEFAULT SETTINGS (ANTI-RESET) ]]
@@ -136,7 +136,7 @@ end
 local SecControl = Tab:Section({ 
     Title = "🚀 Smart Pabrik Control",
     Box = true,
-    Opened = true -- Ini kebuka otomatis pas tab ditekan
+    Opened = true
 })
 
 SecControl:Toggle({ Title = "▶ START SMART PABRIK", Default = getgenv().EnablePabrik, Callback = function(v) getgenv().EnablePabrik = v end })
@@ -147,37 +147,20 @@ local DropBlock = SecControl:Dropdown({ Title = "🧱 Pilih Block (Untuk Dihancu
 
 SecControl:Button({ Title = "🔄 Refresh Tas Item", Callback = function() pcall(function() local newItems = ScanAvailableItems(); DropSeed:Refresh(newItems); DropBlock:Refresh(newItems) end) end })
 
-
 -- AREA SCAN SETUP (Tertutup / Selimut)
-local SecArea = Tab:Section({ 
-    Title = "🗺️ Area Scan Setup (X & Y)",
-    Box = true,
-    Opened = false -- Ini tertutup (selimut)
-})
-
+local SecArea = Tab:Section({ Title = "🗺️ Area Scan Setup (X & Y)", Box = true, Opened = false })
 SecArea:Input({ Title = "Area Start X", Value = tostring(getgenv().PabrikStartX), Placeholder = tostring(getgenv().PabrikStartX), Callback = function(v) getgenv().PabrikStartX = tonumber(v) or getgenv().PabrikStartX end })
 SecArea:Input({ Title = "Area End X", Value = tostring(getgenv().PabrikEndX), Placeholder = tostring(getgenv().PabrikEndX), Callback = function(v) getgenv().PabrikEndX = tonumber(v) or getgenv().PabrikEndX end })
 SecArea:Input({ Title = "Area Start Y", Value = tostring(getgenv().PabrikStartY), Placeholder = tostring(getgenv().PabrikStartY), Callback = function(v) getgenv().PabrikStartY = tonumber(v) or getgenv().PabrikStartY end })
 SecArea:Input({ Title = "Area End Y", Value = tostring(getgenv().PabrikEndY), Placeholder = tostring(getgenv().PabrikEndY), Callback = function(v) getgenv().PabrikEndY = tonumber(v) or getgenv().PabrikEndY end })
 
-
 -- THRESHOLD SETTINGS (Tertutup / Selimut)
-local SecThresh = Tab:Section({ 
-    Title = "⚙️ Threshold Settings (Batas Item)",
-    Box = true,
-    Opened = false
-})
-
+local SecThresh = Tab:Section({ Title = "⚙️ Threshold Settings", Box = true, Opened = false })
 SecThresh:Input({ Title = "Block Threshold (Sisa di tas)", Value = tostring(getgenv().BlockThreshold), Placeholder = tostring(getgenv().BlockThreshold), Callback = function(v) getgenv().BlockThreshold = tonumber(v) or getgenv().BlockThreshold end })
 SecThresh:Input({ Title = "Keep Seed Amt (Sisa di tas)", Value = tostring(getgenv().KeepSeedAmt), Placeholder = tostring(getgenv().KeepSeedAmt), Callback = function(v) getgenv().KeepSeedAmt = tonumber(v) or getgenv().KeepSeedAmt end })
 
-
 -- POSISI BREAK & DROP (Tertutup / Selimut)
-local SecPos = Tab:Section({ 
-    Title = "📍 Posisi Break & Drop",
-    Box = true,
-    Opened = false
-})
+local SecPos = Tab:Section({ Title = "📍 Posisi Break & Drop", Box = true, Opened = false })
 
 local InpBreakX = SecPos:Input({ Title = "Break Pos X", Value = tostring(getgenv().BreakPosX), Placeholder = tostring(getgenv().BreakPosX), Callback = function(v) getgenv().BreakPosX = tonumber(v) or getgenv().BreakPosX end })
 local InpBreakY = SecPos:Input({ Title = "Break Pos Y", Value = tostring(getgenv().BreakPosY), Placeholder = tostring(getgenv().BreakPosY), Callback = function(v) getgenv().BreakPosY = tonumber(v) or getgenv().BreakPosY end })
@@ -191,7 +174,7 @@ SecPos:Button({
             local newY = math.floor(H.Position.Y/4.5+0.5)
             getgenv().BreakPosX = newX
             getgenv().BreakPosY = newY
-            pcall(function() InpBreakX:Set(tostring(newX)) end) -- Otomatis update angka di layar
+            pcall(function() InpBreakX:Set(tostring(newX)) end) 
             pcall(function() InpBreakY:Set(tostring(newY)) end)
         end 
     end
@@ -209,28 +192,21 @@ SecPos:Button({
             local newY = math.floor(H.Position.Y/4.5+0.5)
             getgenv().DropPosX = newX
             getgenv().DropPosY = newY
-            pcall(function() InpDropX:Set(tostring(newX)) end) -- Otomatis update angka di layar
+            pcall(function() InpDropX:Set(tostring(newX)) end) 
             pcall(function() InpDropY:Set(tostring(newY)) end)
         end 
     end
 })
 
-
 -- SETTING KECEPATAN (Tertutup / Selimut)
-local SecSpeed = Tab:Section({ 
-    Title = "⏱️ Kecepatan & Delay",
-    Box = true,
-    Opened = false
-})
-
+local SecSpeed = Tab:Section({ Title = "⏱️ Kecepatan & Delay", Box = true, Opened = false })
 SecSpeed:Input({ Title = "Walk Speed", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
 SecSpeed:Input({ Title = "Place Delay (ms)", Value = tostring(getgenv().PlaceDelay), Placeholder = tostring(getgenv().PlaceDelay), Callback = function(v) getgenv().PlaceDelay = tonumber(v) or getgenv().PlaceDelay end })
 SecSpeed:Input({ Title = "Break Delay (ms)", Value = tostring(getgenv().BreakDelay), Placeholder = tostring(getgenv().BreakDelay), Callback = function(v) getgenv().BreakDelay = tonumber(v) or getgenv().BreakDelay end })
 SecSpeed:Input({ Title = "Hit Count (Pukulan per Block)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
 
-
 -- ========================================== --
--- [[ RADAR INVERTED & A-STAR ]]
+-- [[ RADAR INVERTED & 99999 A-STAR (SMART GLIDE) ]]
 -- ========================================== --
 local BlockSolidityCache = {}
 local function IsTileSolid(gridX, gridY)
@@ -273,7 +249,9 @@ local function FindPathAStar(startX, startY, targetX, targetY)
     local startKey = startX .. "," .. startY
     table.insert(openSet, {x = startX, y = startY, key = startKey})
     gScore[startKey] = 0; fScore[startKey] = heuristic(startX, startY)
-    local maxIterations, iterations = 2000, 0
+    
+    -- FIX: Naikkan limit maxIterations jadi 99999 biar nggak nyerah pas jalan jauh
+    local maxIterations, iterations = 99999, 0 
     local directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
 
     while #openSet > 0 do
@@ -309,47 +287,102 @@ local function FindPathAStar(startX, startY, targetX, targetY)
     return nil 
 end
 
-local function SmoothWalkTo(targetPos)
-    local MyHitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
-    if not MyHitbox then return false end
-    local startPos = MyHitbox.Position
-    local dist = (Vector2.new(startPos.X, startPos.Y) - Vector2.new(targetPos.X, targetPos.Y)).Magnitude 
-    local duration = dist / getgenv().WalkSpeed
+-- FIX: Menambahkan Smooth Glide dari Auto Collect v13
+local function SmoothWalkPath(pathTable, currZ)
+    if #pathTable == 0 then return end
     
-    if duration > 0 then 
+    local HitboxFolder = workspace:FindFirstChild("Hitbox")
+    local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    
+    if not MyHitbox then return false end
+    if PlayerMovement then pcall(function() PlayerMovement.InputActive = false end) end
+
+    local oldGravity = workspace.Gravity
+    workspace.Gravity = 0
+
+    local startPos = MyHitbox.Position
+    if PlayerMovement and PlayerMovement.Position then startPos = PlayerMovement.Position end
+
+    for _, targetPos in ipairs(pathTable) do
+        if not getgenv().EnablePabrik then break end
+        
+        local targetVec3 = Vector3.new(targetPos.X, targetPos.Y, currZ)
+        local dist = (Vector2.new(startPos.X, startPos.Y) - Vector2.new(targetVec3.X, targetVec3.Y)).Magnitude 
+        local duration = dist / getgenv().WalkSpeed
+        if duration < 0.05 then duration = 0.05 end
+
         local t = 0
-        while t < duration do
-            if not getgenv().EnablePabrik then return false end
+        while t < duration and getgenv().EnablePabrik do
             local dt = RunService.Heartbeat:Wait()
             t = t + dt
             local alpha = math.clamp(t / duration, 0, 1)
-            MyHitbox.CFrame = CFrame.new(startPos:Lerp(targetPos, alpha))
-            if PlayerMovement then pcall(function() PlayerMovement.Position = startPos:Lerp(targetPos, alpha) end) end
+            local currentPos = startPos:Lerp(targetVec3, alpha)
+            
+            if PlayerMovement then 
+                pcall(function() 
+                    PlayerMovement.Position = currentPos
+                    PlayerMovement.VelocityX = 0 
+                    PlayerMovement.VelocityY = 0 
+                    PlayerMovement.VelocityZ = 0 
+                end)
+            else
+                local fixedRot = MyHitbox.CFrame - MyHitbox.CFrame.Position
+                local newCFrame = fixedRot + currentPos
+                MyHitbox.CFrame = newCFrame
+                if hrp and MyHitbox ~= hrp then hrp.CFrame = newCFrame end
+            end
         end
+        startPos = targetVec3
     end
-    MyHitbox.CFrame = CFrame.new(targetPos)
-    if PlayerMovement then pcall(function() PlayerMovement.Position = targetPos end) end
-    task.wait(0.02) 
+    
+    if PlayerMovement then 
+        pcall(function() 
+            PlayerMovement.VelocityX = 0 
+            PlayerMovement.VelocityY = 0 
+            PlayerMovement.VelocityZ = 0 
+            PlayerMovement.InputActive = true 
+        end)
+    end
+    workspace.Gravity = oldGravity
     return true
 end
 
+-- FIX: Mengganti step-by-step MoveSmartlyTo lama menjadi Smooth Glide dengan Teleport Fallback
 local function MoveSmartlyTo(targetX, targetY)
     local MyHitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
     if not MyHitbox then return false end
-    local myZ = MyHitbox.Position.Z
-    local myGridX = math.round(MyHitbox.Position.X / getgenv().GridSize)
-    local myGridY = math.round(MyHitbox.Position.Y / getgenv().GridSize)
+    local currZ = MyHitbox.Position.Z
+    local myGridX = math.floor(MyHitbox.Position.X / getgenv().GridSize + 0.5)
+    local myGridY = math.floor(MyHitbox.Position.Y / getgenv().GridSize + 0.5)
 
     if myGridX == targetX and myGridY == targetY then return true end
+    
     local route = FindPathAStar(myGridX, myGridY, targetX, targetY)
-    if not route then return false end
-
-    for _, stepPos in ipairs(route) do
-        if not getgenv().EnablePabrik then break end
-        local pos = Vector3.new(stepPos.x * getgenv().GridSize, stepPos.y * getgenv().GridSize, myZ)
-        if not SmoothWalkTo(pos) then return false end
+    
+    if route and #route > 0 then
+        local pathTable = {}
+        for _, step in ipairs(route) do
+            table.insert(pathTable, Vector3.new(step.x * getgenv().GridSize, step.y * getgenv().GridSize, currZ))
+        end
+        table.insert(pathTable, Vector3.new(targetX * getgenv().GridSize, targetY * getgenv().GridSize, currZ))
+        return SmoothWalkPath(pathTable, currZ)
+    else
+        -- FIX: Teleport instan kalau terlalu jauh atau jalan buntu karena map belum ter-render
+        warn("⚠️ Map belum ter-render atau jalan buntu! Menggunakan Fast-Travel...")
+        if PlayerMovement then pcall(function() PlayerMovement.InputActive = false end) end
+        
+        local targetVec3 = Vector3.new(targetX * getgenv().GridSize, targetY * getgenv().GridSize, currZ)
+        if PlayerMovement then 
+            pcall(function() PlayerMovement.Position = targetVec3 end)
+        else
+            MyHitbox.CFrame = CFrame.new(targetVec3)
+        end
+        
+        task.wait(0.2)
+        if PlayerMovement then pcall(function() PlayerMovement.InputActive = true end) end
+        return true
     end
-    return true
 end
 
 -- ========================================== --
@@ -579,7 +612,6 @@ task.spawn(function()
 
                 local seedSlot = GetSlotByItemName(getgenv().SelectedSeed)
                 local canPlant = (#targetTanam > 0)
-                
                 local didHarvest = (#targetPanen > 0)
                 local didPlant = (canPlant and seedSlot ~= nil)
                 
