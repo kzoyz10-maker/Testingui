@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm V62 (SMART GLIDE + HARVEST SWEEP)"
+getgenv().ScriptVersion = "Auto Farm V63 (HARVEST FAST SWEEP + SMART GLIDE)"
 
 -- ========================================== --
 -- [[ KONFIGURASI AWAL ]]
@@ -13,7 +13,6 @@ getgenv().PlantDelay = getgenv().PlantDelay or 0.15
 
 getgenv().EnableSmartHarvest = getgenv().EnableSmartHarvest or false
 getgenv().EnableAutoPlant = getgenv().EnableAutoPlant or false
-getgenv().CollectDrops = getgenv().CollectDrops or true
 getgenv().SelectedSeed = getgenv().SelectedSeed or "Kosong"
 
 local Players = game:GetService("Players")
@@ -104,7 +103,6 @@ local SecFarm = Tab:Section({ Title = "🌾 Farm & Plant Logic", Box = true, Ope
 
 SecFarm:Toggle({ Title = "▶ START AUTO HARVEST", Default = getgenv().EnableSmartHarvest, Callback = function(v) getgenv().EnableSmartHarvest = v end })
 SecFarm:Toggle({ Title = "▶ START AUTO PLANT", Default = getgenv().EnableAutoPlant, Callback = function(v) getgenv().EnableAutoPlant = v end })
-SecFarm:Toggle({ Title = "🧲 Auto Sweep Collect (Pas Harvest)", Default = getgenv().CollectDrops, Callback = function(v) getgenv().CollectDrops = v end })
 
 local DropSeed = SecFarm:Dropdown({ Title = "🎒 Choose Seed (Bibit)", Options = ScanAvailableItems(), Default = getgenv().SelectedSeed, Callback = function(v) getgenv().SelectedSeed = v end })
 SecFarm:Button({ Title = "🔄 Refresh Inventory", Callback = function() pcall(function() DropSeed:Refresh(ScanAvailableItems()) end) end })
@@ -284,27 +282,6 @@ local function MoveSmartlyTo(targetX, targetY)
     end
 end
 
-local function GetExactDropsInGrid(TargetGridX, TargetGridY)
-    local TargetFolders = { workspace:FindFirstChild("Drops"), workspace:FindFirstChild("Gems") }
-    local exactPositions = {}
-    for _, folder in ipairs(TargetFolders) do
-        if folder then
-            for _, obj in pairs(folder:GetChildren()) do
-                local pos = nil
-                if obj:IsA("BasePart") then pos = obj.Position
-                elseif obj:IsA("Model") and obj.PrimaryPart then pos = obj.PrimaryPart.Position end
-                
-                if pos then
-                    local dX = math.floor(pos.X / getgenv().GridSize + 0.5)
-                    local dY = math.floor(pos.Y / getgenv().GridSize + 0.5)
-                    if dX == TargetGridX and dY == TargetGridY then table.insert(exactPositions, pos) end
-                end
-            end
-        end
-    end
-    return exactPositions
-end
-
 -- ========================================== --
 -- [[ AUTO HARVEST LOGIC (TYPEWRITER + SWEEP BACK) ]]
 -- ========================================== --
@@ -352,19 +329,10 @@ getgenv().KzoyzAutoFarmLoop = task.spawn(function()
                         else RemoteFist:InvokeServer(targetVec) end
                     end)
                     
-                    -- FIX SWEEP COLLECT: Tunggu jatuh lalu sapu kayak script Pabrik!
-                    task.wait(getgenv().BreakDelay + 0.3)
-                    if getgenv().CollectDrops then
-                        local exactDrops = GetExactDropsInGrid(sapling.x, sapling.y)
-                        if #exactDrops > 0 then
-                            local MyHitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
-                            if MyHitbox then 
-                                SmoothWalkPath(exactDrops, MyHitbox.Position.Z)
-                                MoveSmartlyTo(sapling.x, sapling.y) -- Normalin posisi biar ga melenceng
-                            end
-                        end
-                    end
+                    -- Tidak ada jeda tambahan nunggu jatuh, langsung lanjut
+                    task.wait(getgenv().BreakDelay)
                     
+                    -- SWEEP END-OF-ROW: Kalau udah mau pindah baris, nyapu dulu ke awal
                     local nextSapling = SaplingsData[i + 1]
                     if not nextSapling or nextSapling.y ~= sapling.y then
                         MoveSmartlyTo(sapling.x + 1, sapling.y)
