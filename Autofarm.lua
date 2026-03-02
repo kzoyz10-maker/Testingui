@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v19.7 (SMOOTH GLIDE COLLECT + ANTI 3D)" 
+getgenv().ScriptVersion = "Auto Farm v19.8 (SMART A-STAR PATHING + ANTI 3D)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -159,7 +159,7 @@ SecSpeed:Input({ Title = "Walk Speed (Kecepatan Collect)", Value = tostring(getg
 SecSpeed:Input({ Title = "Hit Spam (Jumlah Pukulan)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
 
 local SecSeed = Tab:Section({ Title = "🌱 Auto Drop Seed (Sapling)", Box = true, Opened = false })
-SecSeed:Toggle({ Title = "Enable Auto Drop Sapling", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v end })
+SecSeed:Toggle({ Title = "Enable Auto Drop Sapling Smart", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v end })
 SecSeed:Input({ Title = "Drop Threshold (Amount)", Value = tostring(getgenv().SaplingThreshold), Placeholder = tostring(getgenv().SaplingThreshold), Callback = function(v) getgenv().SaplingThreshold = tonumber(v) or getgenv().SaplingThreshold end })
 
 -- TOMBOL SET POSISI BARU:
@@ -255,7 +255,70 @@ local function IsTileSolid(TargetGridX, TargetGridY, currZ)
 end
 
 -- ==============================================================
--- FUNGSI BARU: SWEEP PATH (KUMPULIN SEMUA TANPA JEDA)
+-- FUNGSI BARU: A-STAR PATHFINDING UNTUK AUTO DROP / SMART WALK
+-- ==============================================================
+local function FindPathAStar(startX, startY, targetX, targetY, currZ)
+    if startX == targetX and startY == targetY then return {} end
+    local function heuristic(x, y) return math.abs(x - targetX) + math.abs(y - targetY) end
+    local openSet, closedSet, cameFrom, gScore, fScore = {}, {}, {}, {}, {}
+    local startKey = startX .. "," .. startY
+    table.insert(openSet, {x = startX, y = startY, key = startKey})
+    gScore[startKey] = 0; fScore[startKey] = heuristic(startX, startY)
+    local maxIterations, iterations = 800, 0
+    local directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
+    
+    local solidCache = {}
+
+    while #openSet > 0 do
+        iterations = iterations + 1; if iterations > maxIterations then break end
+        local current, currentIndex = openSet[1], 1
+        for i = 2, #openSet do if fScore[openSet[i].key] < fScore[current.key] then current = openSet[i]; currentIndex = i end end
+        
+        if current.x == targetX and current.y == targetY then
+            local path, currKey = {}, current.key
+            while cameFrom[currKey] do 
+                local node = cameFrom[currKey]
+                table.insert(path, 1, {x = current.x, y = current.y})
+                current = node
+                currKey = node.x .. "," .. node.y 
+            end
+            return path
+        end
+        
+        table.remove(openSet, currentIndex); closedSet[current.key] = true
+        
+        for _, dir in ipairs(directions) do
+            local nextX, nextY = current.x + dir[1], current.y + dir[2]
+            local nextKey = nextX .. "," .. nextY
+            
+            if closedSet[nextKey] then continue end
+            
+            -- Cache biar GetPartBoundsInBox gak bikin lag
+            if solidCache[nextKey] == nil then
+                solidCache[nextKey] = IsTileSolid(nextX, nextY, currZ)
+            end
+            
+            if not (nextX == targetX and nextY == targetY) and solidCache[nextKey] then 
+                closedSet[nextKey] = true; continue 
+            end
+            
+            local tentative_gScore = gScore[current.key] + 1
+            if not gScore[nextKey] or tentative_gScore < gScore[nextKey] then
+                cameFrom[nextKey] = current
+                gScore[nextKey] = tentative_gScore
+                fScore[nextKey] = tentative_gScore + heuristic(nextX, nextY)
+                
+                local inOpenSet = false
+                for _, node in ipairs(openSet) do if node.key == nextKey then inOpenSet = true; break end end
+                if not inOpenSet then table.insert(openSet, {x = nextX, y = nextY, key = nextKey}) end
+            end
+        end
+    end
+    return nil 
+end
+
+-- ==============================================================
+-- FUNGSI SWEEP PATH (KUMPULIN SEMUA / GLIDE MENGIKUTI JALUR A-STAR)
 -- ==============================================================
 local function SafeMovePath(pathTable, currZ)
     if #pathTable == 0 then return end
@@ -263,28 +326,22 @@ local function SafeMovePath(pathTable, currZ)
     local HitboxFolder = workspace:FindFirstChild("Hitbox")
     local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
     local mover = MyHitbox or hrp
     
     if not mover then return false end
     
-    -- Matikan input manual sementara
     if PlayerMovement then pcall(function() PlayerMovement.InputActive = false end) end
 
-    -- Aktifkan Modfly SATU KALI untuk seluruh jalur
     local oldGravity = workspace.Gravity
     workspace.Gravity = 0
 
     local startPos = mover.Position
-    if PlayerMovement and PlayerMovement.Position then
-        startPos = PlayerMovement.Position
-    end
+    if PlayerMovement and PlayerMovement.Position then startPos = PlayerMovement.Position end
 
-    -- Loop tanpa henti ke semua titik drop
-    for _, dropPos in ipairs(pathTable) do
+    for _, targetPos in ipairs(pathTable) do
         if not getgenv().MasterAutoFarm then break end
         
-        local targetVec3 = Vector3.new(dropPos.X, dropPos.Y, startPos.Z)
+        local targetVec3 = Vector3.new(targetPos.X, targetPos.Y, startPos.Z)
         
         local dist = (Vector3.new(startPos.X, startPos.Y, 0) - Vector3.new(targetVec3.X, targetVec3.Y, 0)).Magnitude 
         local duration = dist / getgenv().WalkSpeed
@@ -311,12 +368,9 @@ local function SafeMovePath(pathTable, currZ)
                 if hrp and MyHitbox then hrp.CFrame = newCFrame end
             end
         end
-        
-        -- Update posisi start buat titik selanjutnya tanpa putus
         startPos = targetVec3
     end
     
-    -- Kembalikan settingan setelah SATU jalur penuh disapu
     if PlayerMovement then 
         pcall(function() 
             PlayerMovement.VelocityX = 0 
@@ -330,6 +384,36 @@ end
 
 local function SafeMoveTo(targetVec3)
     SafeMovePath({targetVec3}, targetVec3.Z)
+end
+
+-- ==============================================================
+-- SMART MOVE TO (AUTO A-STAR ROUTING UNTUK JAUH & DROP)
+-- ==============================================================
+local function SmartMoveTo(targetVec3, currZ)
+    local HitboxFolder = workspace:FindFirstChild("Hitbox")
+    local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
+    local mover = MyHitbox or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
+    if not mover then return false end
+    
+    local startX = math.floor(mover.Position.X / getgenv().GridSize + 0.5)
+    local startY = math.floor(mover.Position.Y / getgenv().GridSize + 0.5)
+    local targetX = math.floor(targetVec3.X / getgenv().GridSize + 0.5)
+    local targetY = math.floor(targetVec3.Y / getgenv().GridSize + 0.5)
+    
+    local path = FindPathAStar(startX, startY, targetX, targetY, currZ)
+    
+    if path and #path > 0 then
+        local pathTable = {}
+        for _, step in ipairs(path) do
+            table.insert(pathTable, Vector3.new(step.x * getgenv().GridSize, step.y * getgenv().GridSize, currZ))
+        end
+        -- Push final koordinat biar bener2 nempel di target
+        table.insert(pathTable, targetVec3)
+        SafeMovePath(pathTable, currZ)
+    else
+        -- Kalo dekat atau ga ada jalan terdeteksi, jalan biasa (tembus/glide)
+        SafeMoveTo(targetVec3)
+    end
 end
 
 -- ==============================================================
@@ -399,12 +483,12 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                 end
                 
                 if #ExactDropsToCollect > 0 and getgenv().MasterAutoFarm then
-                    -- LANGSUNG GLIDING MENYAPU SEMUA TITIK DROP TANPA JEDA!
+                    -- GLIDING MENYAPU SEMUA TITIK DROP
                     SafeMovePath(ExactDropsToCollect, currZ)
                     
-                    -- Balik ke posisi tengah tempat bot farming semula
+                    -- Balik ke posisi tengah tempat bot farming semula (PAKAI SMART A-STAR BIAR GA NABRAK)
                     local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
-                    SafeMoveTo(baseVec) 
+                    SmartMoveTo(baseVec, currZ) 
                 end
                 
                 -- [[ 4. AUTO DROP SAPLING ]]
@@ -417,7 +501,8 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         local dropY = getgenv().DropTargetY or BaseY
                         local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
                         
-                        SafeMoveTo(dropVec) 
+                        -- Pergi ke titik drop dengan algoritma cari celah / menghindar
+                        SmartMoveTo(dropVec, currZ) 
                         task.wait(0.2)
                         
                         pcall(function() RemoteDrop:FireServer(sapSlot, sapAmount) end)
@@ -437,8 +522,10 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                         end)
                         
                         task.wait(0.5)
+                        
+                        -- Balik ke tempat farm semula juga pakai A-Star menghindar
                         local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
-                        SafeMoveTo(baseVec) 
+                        SmartMoveTo(baseVec, currZ) 
                     end
                 end
 
