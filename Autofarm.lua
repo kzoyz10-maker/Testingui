@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v20.2 (SMART PATH GLIDE + DROP UI FIX)" 
+getgenv().ScriptVersion = "Auto Farm v20.3 (SMART GLIDE + ULTIMATE UI RESTORE)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -46,6 +46,45 @@ pcall(function() InventoryMod = require(RS:WaitForChild("Modules"):WaitForChild(
 
 local UIManager
 pcall(function() UIManager = require(RS:WaitForChild("Managers"):WaitForChild("UIManager")) end)
+
+-- [[ ========================================================= ]] --
+-- [[ 🛡️ ULTIMATE UI RESTORE (DARI MANAGER V3) ]]
+-- [[ ========================================================= ]] --
+local function ForceRestoreGameUI()
+    local PG = LP:FindFirstChild("PlayerGui")
+    
+    -- 1. Tutup Prompt lewat UIManager & Munculkan HUD
+    pcall(function()
+        if UIManager then
+            if type(UIManager.ClosePrompt) == "function" then UIManager:ClosePrompt() end
+            if type(UIManager.ShowHUD) == "function" then UIManager:ShowHUD() end
+            if type(UIManager.ShowUI) == "function" then UIManager:ShowUI() end
+        end
+    end)
+    
+    if PG then
+        -- 2. Matikan frame prompt yang nyangkut (UIPromptUI / UIPrompt)
+        pcall(function()
+            for _, gui in ipairs(PG:GetDescendants()) do
+                if gui:IsA("Frame") and (gui.Name:lower():match("prompt") or gui.Name:lower():match("dialog")) then 
+                    gui.Visible = false 
+                end
+            end
+        end)
+        
+        -- 3. Nyalakan ulang ScreenGui utama yang disembunyikan game
+        pcall(function()
+            local RestoredUI = {"GemsUI", "InventoryUI", "TouchGui", "TopbarCentered", "TopbarCenteredClipped", "TopbarStandard", "TopbarStandardClipped", "ExperienceChat"}
+            for _, name in ipairs(RestoredUI) do 
+                local ui = PG:FindFirstChild(name)
+                if ui and ui:IsA("ScreenGui") then ui.Enabled = true end 
+            end
+        end)
+    end
+    
+    -- 4. Kembalikan kontrol jalan
+    if PlayerMovement then pcall(function() PlayerMovement.InputActive = true end) end
+end
 
 -- [[ ========================================================= ]] --
 -- [[ HELPER FUNCTIONS ]]
@@ -140,9 +179,7 @@ SecFarm:Toggle({
     Default = getgenv().MasterAutoFarm, 
     Callback = function(v) 
         getgenv().MasterAutoFarm = v 
-        if not v then
-            if PlayerMovement then pcall(function() PlayerMovement.InputActive = true end) end
-        end
+        if not v then ForceRestoreGameUI() end
     end 
 })
 
@@ -160,7 +197,7 @@ SecSpeed:Input({ Title = "Walk Speed (Kecepatan Collect)", Value = tostring(getg
 SecSpeed:Input({ Title = "Hit Spam (Jumlah Pukulan)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
 
 local SecSeed = Tab:Section({ Title = "🌱 Auto Drop Seed (Sapling)", Box = true, Opened = false })
-SecSeed:Toggle({ Title = "Enable Auto Drop Sapling", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v end })
+SecSeed:Toggle({ Title = "Enable Auto Drop Sapling", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v; if not v then ForceRestoreGameUI() end end })
 SecSeed:Input({ Title = "Drop Threshold (Amount)", Value = tostring(getgenv().SaplingThreshold), Placeholder = tostring(getgenv().SaplingThreshold), Callback = function(v) getgenv().SaplingThreshold = tonumber(v) or getgenv().SaplingThreshold end })
 
 SecSeed:Button({ 
@@ -179,7 +216,7 @@ local DropSeed = SecSeed:Dropdown({ Title = "Target Drop Seed (ID)", Options = S
 SecSeed:Button({ Title = "🔄 Refresh Seed List", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
 
 -- [[ ========================================================= ]] --
--- [[ PATHFINDING & SMOOTH GLIDE SYSTEM (FROM COLLECT V13) ]]
+-- [[ PATHFINDING & SMOOTH GLIDE SYSTEM ]]
 -- [[ ========================================================= ]] --
 local BlockSolidityCache = {}
 local function IsTileSolid(gridX, gridY)
@@ -237,14 +274,12 @@ end
 
 local function SmoothWalkPath(pathTable, currZ)
     if #pathTable == 0 then return end
-    
     local HitboxFolder = workspace:FindFirstChild("Hitbox")
     local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     if not MyHitbox then return false end
     
     if PlayerMovement then pcall(function() PlayerMovement.InputActive = false end) end
-
     local oldGravity = workspace.Gravity
     workspace.Gravity = 0
 
@@ -253,7 +288,6 @@ local function SmoothWalkPath(pathTable, currZ)
 
     for _, targetPos in ipairs(pathTable) do
         if not getgenv().MasterAutoFarm then break end
-        
         local targetVec3 = Vector3.new(targetPos.X, targetPos.Y, currZ)
         local dist = (Vector2.new(startPos.X, startPos.Y) - Vector2.new(targetVec3.X, targetVec3.Y)).Magnitude 
         local duration = dist / getgenv().WalkSpeed
@@ -268,10 +302,7 @@ local function SmoothWalkPath(pathTable, currZ)
             
             if PlayerMovement then 
                 pcall(function() 
-                    PlayerMovement.Position = currentPos
-                    PlayerMovement.VelocityX = 0 
-                    PlayerMovement.VelocityY = 0 
-                    PlayerMovement.VelocityZ = 0 
+                    PlayerMovement.Position = currentPos; PlayerMovement.VelocityX = 0; PlayerMovement.VelocityY = 0; PlayerMovement.VelocityZ = 0 
                 end)
             else
                 local fixedRot = MyHitbox.CFrame - MyHitbox.CFrame.Position
@@ -283,14 +314,7 @@ local function SmoothWalkPath(pathTable, currZ)
         startPos = targetVec3
     end
     
-    if PlayerMovement then 
-        pcall(function() 
-            PlayerMovement.VelocityX = 0 
-            PlayerMovement.VelocityY = 0 
-            PlayerMovement.VelocityZ = 0 
-            PlayerMovement.InputActive = true 
-        end)
-    end
+    if PlayerMovement then pcall(function() PlayerMovement.VelocityX = 0; PlayerMovement.VelocityY = 0; PlayerMovement.VelocityZ = 0; PlayerMovement.InputActive = true end) end
     workspace.Gravity = oldGravity
     return true
 end
@@ -298,7 +322,6 @@ end
 local function SmartMoveTo(targetVec3, currZ)
     local MyHitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
     if not MyHitbox then return false end
-    
     local startX = math.floor(MyHitbox.Position.X / getgenv().GridSize + 0.5)
     local startY = math.floor(MyHitbox.Position.Y / getgenv().GridSize + 0.5)
     local targetX = math.floor(targetVec3.X / getgenv().GridSize + 0.5)
@@ -308,9 +331,7 @@ local function SmartMoveTo(targetVec3, currZ)
     
     if path and #path > 0 then
         local pathTable = {}
-        for _, step in ipairs(path) do
-            table.insert(pathTable, Vector3.new(step.x * getgenv().GridSize, step.y * getgenv().GridSize, currZ))
-        end
+        for _, step in ipairs(path) do table.insert(pathTable, Vector3.new(step.x * getgenv().GridSize, step.y * getgenv().GridSize, currZ)) end
         table.insert(pathTable, Vector3.new(targetVec3.X, targetVec3.Y, currZ))
         SmoothWalkPath(pathTable, currZ)
     else
@@ -321,21 +342,17 @@ end
 local function GetExactDropsInGrid(TargetGridX, TargetGridY)
     local TargetFolders = { workspace:FindFirstChild("Drops"), workspace:FindFirstChild("Gems") }
     local exactPositions = {}
-    
     for _, folder in ipairs(TargetFolders) do
         if folder then
             for _, obj in pairs(folder:GetChildren()) do
                 local pos = nil
                 if obj:IsA("BasePart") then pos = obj.Position
-                elseif obj:IsA("Model") and obj.PrimaryPart then pos = obj.PrimaryPart.Position
-                end
+                elseif obj:IsA("Model") and obj.PrimaryPart then pos = obj.PrimaryPart.Position end
                 
                 if pos then
                     local dX = math.floor(pos.X / getgenv().GridSize + 0.5)
                     local dY = math.floor(pos.Y / getgenv().GridSize + 0.5)
-                    if dX == TargetGridX and dY == TargetGridY then
-                        table.insert(exactPositions, pos)
-                    end
+                    if dX == TargetGridX and dY == TargetGridY then table.insert(exactPositions, pos) end
                 end
             end
         end
@@ -396,8 +413,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                 task.wait(getgenv().WaitDropMs / 1000) 
                 local ExactDropsToCollect = {}
                 for _, offset in ipairs(getgenv().SelectedTiles) do
-                    local tx = BaseX + offset.x
-                    local ty = BaseY + offset.y
+                    local tx = BaseX + offset.x; local ty = BaseY + offset.y
                     if not IsTileSolid(tx, ty) then 
                         for _, dropPos in ipairs(GetExactDropsInGrid(tx, ty)) do table.insert(ExactDropsToCollect, dropPos) end
                     end
@@ -409,7 +425,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     SmartMoveTo(baseVec, currZ) 
                 end
                 
-                -- [[ 4. AUTO DROP (FIX UI RESTORE & CHUNKING) ]]
+                -- [[ 4. AUTO DROP (UI RESTORE FIX) ]]
                 if getgenv().AutoDropSapling and getgenv().TargetSaplingName ~= "Kosong" then
                     local sapSlot = GetSlotByItemID(getgenv().TargetSaplingName)
                     local sapAmount = GetItemAmountByID(getgenv().TargetSaplingName)
@@ -428,7 +444,6 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                             
                             pcall(function() RemoteDrop:FireServer(sapSlot, currentDrop) end)
                             
-                            -- Fake the UI event so the server acknowledges the logic
                             pcall(function() 
                                 if UIManager and type(UIManager.FireEvent) == "function" then 
                                     UIManager:FireEvent("drp", { amt = tostring(currentDrop) })
@@ -442,22 +457,10 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                             task.wait(0.4) 
                         end
                         
-                        -- FIX: TUTUP SEMUA PROMPT UI SECARA PAKSA BIAR GAK STUCK
-                        pcall(function()
-                            if UIManager and type(UIManager.ClosePrompt) == "function" then UIManager:ClosePrompt() end
-                            if UIManager and type(UIManager.ClearActivePrompts) == "function" then UIManager:ClearActivePrompts() end
-                            
-                            -- Cari gui yang nyangkut di layer atas dan matiin manual
-                            for _, gui in ipairs(LP.PlayerGui:GetDescendants()) do
-                                if gui:IsA("Frame") and (gui.Name:lower():match("prompt") or gui.Name:lower():match("dialog")) then 
-                                    gui.Visible = false 
-                                end
-                            end
-                        end)
-                        
+                        -- FIX: Panggil fungsi sakti dari Manager buat bongkar paksa UI-nya
+                        ForceRestoreGameUI()
                         task.wait(0.5) 
                         
-                        -- Balik ke posisi asal farm
                         local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
                         SmartMoveTo(baseVec, currZ) 
                     end
