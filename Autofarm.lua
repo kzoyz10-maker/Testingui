@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v19.8 (SMART A-STAR PATHING + ANTI 3D)" 
+getgenv().ScriptVersion = "Auto Farm v19.8 (SMART A-STAR PATHING + ANTI 3D FIX DROP)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -159,7 +159,7 @@ SecSpeed:Input({ Title = "Walk Speed (Kecepatan Collect)", Value = tostring(getg
 SecSpeed:Input({ Title = "Hit Spam (Jumlah Pukulan)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
 
 local SecSeed = Tab:Section({ Title = "🌱 Auto Drop Seed (Sapling)", Box = true, Opened = false })
-SecSeed:Toggle({ Title = "Enable Auto Drop Sapling Smart", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v end })
+SecSeed:Toggle({ Title = "Enable Auto Drop Sapling", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v end })
 SecSeed:Input({ Title = "Drop Threshold (Amount)", Value = tostring(getgenv().SaplingThreshold), Placeholder = tostring(getgenv().SaplingThreshold), Callback = function(v) getgenv().SaplingThreshold = tonumber(v) or getgenv().SaplingThreshold end })
 
 -- TOMBOL SET POSISI BARU:
@@ -521,7 +521,9 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                             end
                         end)
                         
-                        task.wait(0.5)
+                        -- [[ PERBAIKAN DI SINI: NORMALKAN GRAVITASI DAN TAMBAH DELAY ]]
+                        workspace.Gravity = 196.2 
+                        task.wait(1.5) 
                         
                         -- Balik ke tempat farm semula juga pakai A-Star menghindar
                         local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
