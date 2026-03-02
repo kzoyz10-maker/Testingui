@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v19.5 (SMART WALK + ANTI 3D + 150ms BREAK)" 
+getgenv().ScriptVersion = "Auto Farm v19.6 (SMART WALK + ANTI 3D + DROP POS)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -161,6 +161,25 @@ SecSpeed:Input({ Title = "Hit Spam (Jumlah Pukulan)", Value = tostring(getgenv()
 local SecSeed = Tab:Section({ Title = "🌱 Auto Drop Seed (Sapling)", Box = true, Opened = false })
 SecSeed:Toggle({ Title = "Enable Auto Drop Sapling", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v end })
 SecSeed:Input({ Title = "Drop Threshold (Amount)", Value = tostring(getgenv().SaplingThreshold), Placeholder = tostring(getgenv().SaplingThreshold), Callback = function(v) getgenv().SaplingThreshold = tonumber(v) or getgenv().SaplingThreshold end })
+
+-- TOMBOL SET POSISI BARU:
+SecSeed:Button({ 
+    Title = "📍 Set Posisi Drop Seed (Di Sini)", 
+    Callback = function() 
+        local HitboxFolder = workspace:FindFirstChild("Hitbox")
+        local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
+        local ref = MyHitbox or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
+        
+        if ref then
+            getgenv().DropTargetX = math.floor(ref.Position.X / getgenv().GridSize + 0.5)
+            getgenv().DropTargetY = math.floor(ref.Position.Y / getgenv().GridSize + 0.5)
+            
+            -- Tampilkan notif di konsol (F9) biar tau sukses
+            warn("✅ Berhasil! Drop Posisi di-set ke Grid X:", getgenv().DropTargetX, " Y:", getgenv().DropTargetY)
+        end
+    end 
+})
+
 local DropSeed = SecSeed:Dropdown({ Title = "Target Drop Seed (ID)", Options = ScanAvailableItems(), Default = getgenv().TargetSaplingName, Callback = function(v) getgenv().TargetSaplingName = v end })
 SecSeed:Button({ Title = "🔄 Refresh Seed List", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
 
@@ -411,6 +430,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     local sapAmount = GetItemAmountByID(getgenv().TargetSaplingName)
                     
                     if sapSlot and sapAmount >= getgenv().SaplingThreshold then
+                        -- MENGGUNAKAN KOORDINAT CUSTOM JIKA DI-SET
                         local dropX = getgenv().DropTargetX or (BaseX + 1)
                         local dropY = getgenv().DropTargetY or BaseY
                         local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
