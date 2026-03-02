@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v18.0 (ULTIMATE FIX - BURST & REAL WALK)" 
+getgenv().ScriptVersion = "Auto Farm v19.0 (ULTIMATE STABLE + BURST + REAL WALK)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -22,7 +22,7 @@ getgenv().GridSize = getgenv().GridSize or 4.5
 
 getgenv().MasterAutoFarm = getgenv().MasterAutoFarm or false
 getgenv().AutoSaplingMode = getgenv().AutoSaplingMode or false
-getgenv().HitCount = getgenv().HitCount or 25 -- Default 25 untuk Burst Hit!
+getgenv().HitCount = getgenv().HitCount or 25 -- Default 25 Burst (Spam Pukulan)
 getgenv().BreakDelayMs = getgenv().BreakDelayMs or 250
 getgenv().WaitDropMs = getgenv().WaitDropMs or 250  
 getgenv().WalkSpeed = getgenv().WalkSpeed or 25 
@@ -46,7 +46,7 @@ local UIManager
 pcall(function() UIManager = require(RS:WaitForChild("Managers"):WaitForChild("UIManager")) end)
 
 -- [[ ========================================================= ]] --
--- [[ HELPER FUNCTIONS (KEMBALI KE ID BASE, PALING STABIL) ]]
+-- [[ HELPER FUNCTIONS (KEMBALI KE ID BASE, PALING ANTI ERROR) ]]
 -- [[ ========================================================= ]] --
 local function GetSlotByItemID(targetID)
     if not InventoryMod or not InventoryMod.Stacks then return nil end
@@ -95,12 +95,9 @@ local function FindHotbarModule()
 end
 getgenv().GameInventoryModule = FindHotbarModule()
 
-local function GetPlayerGridPosition()
-    local ref = workspace:FindFirstChild("Hitbox") and workspace:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
-    if ref then return ref.Position.X, ref.Position.Y end
-    return nil, nil
-end
-
+-- [[ ========================================================= ]] --
+-- [[ MODAL UI SELECTOR GRID ]]
+-- [[ ========================================================= ]] --
 local function OpenTileSelectorModal()
     local ThemeTile = { TileOff = Color3.fromRGB(45, 55, 80), TileOn = Color3.fromRGB(240, 160, 60), TileYou = Color3.fromRGB(100, 200, 100), DarkBlue = Color3.fromRGB(25, 30, 45) }
     local ScreenGui = Instance.new("ScreenGui"); ScreenGui.Name = "KzoyzTileModal"; ScreenGui.Parent = game:GetService("CoreGui") or LP.PlayerGui
@@ -142,7 +139,9 @@ SecFarm:Toggle({
     Default = getgenv().MasterAutoFarm, 
     Callback = function(v) 
         getgenv().MasterAutoFarm = v 
-        if not v then if PlayerMovement then pcall(function() PlayerMovement.InputActive = true end) end end
+        if not v then
+            if PlayerMovement then pcall(function() PlayerMovement.InputActive = true end) end
+        end
     end 
 })
 
@@ -151,7 +150,7 @@ local DropFarmBlock = SecFarm:Dropdown({ Title = "🎯 Target Farm Block (ID)", 
 SecFarm:Button({ Title = "🔄 Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
 SecFarm:Button({ Title = "📝 Select Farm Tiles (Grid Area)", Callback = function() OpenTileSelectorModal() end })
 
-local SecCollect = Tab:Section({ Title = "🧲 Filter Auto Collect", Box = true, Opened = false })
+local SecCollect = Tab:Section({ Title = "🧲 Filter Autffo Collect", Box = true, Opened = false })
 SecCollect:Toggle({ Title = "Only Collect Sapling (Abaikan drop lain)", Default = getgenv().AutoSaplingMode, Callback = function(v) getgenv().AutoSaplingMode = v end })
 
 local SecSpeed = Tab:Section({ Title = "⏱️ Delay & Speeds", Box = true, Opened = false })
@@ -166,25 +165,8 @@ SecSeed:Input({ Title = "Drop Threshold (Amount)", Value = tostring(getgenv().Sa
 local DropSeed = SecSeed:Dropdown({ Title = "Target Drop Seed (ID)", Options = ScanAvailableItems(), Default = getgenv().TargetSaplingName, Callback = function(v) getgenv().TargetSaplingName = v end })
 SecSeed:Button({ Title = "🔄 Refresh Seed List", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
 
-local InpDropX = SecSeed:Input({ Title = "Drop Pos X", Value = tostring(getgenv().DropTargetX or ""), Placeholder = "Belum diset", Callback = function(v) getgenv().DropTargetX = tonumber(v) or getgenv().DropTargetX end })
-local InpDropY = SecSeed:Input({ Title = "Drop Pos Y", Value = tostring(getgenv().DropTargetY or ""), Placeholder = "Belum diset", Callback = function(v) getgenv().DropTargetY = tonumber(v) or getgenv().DropTargetY end })
-
-SecSeed:Button({ 
-    Title = "📍 Set Drop Pos (Current Loc)", 
-    Callback = function() 
-        local px, py = GetPlayerGridPosition()
-        if px and py then
-            local cx = math.floor(px / getgenv().GridSize + 0.5)
-            local cy = math.floor(py / getgenv().GridSize + 0.5)
-            getgenv().DropTargetX = cx; getgenv().DropTargetY = cy
-            pcall(function() InpDropX:Set(tostring(cx)) end)
-            pcall(function() InpDropY:Set(tostring(cy)) end)
-        end
-    end
-})
-
 -- [[ ========================================================= ]] --
--- [[ SYSTEM LOGIC ]]
+-- [[ SYSTEM LOGIC & SAFE MOVEMENT ]]
 -- [[ ========================================================= ]] --
 local Remotes = RS:WaitForChild("Remotes")
 local RemotePlace = Remotes:WaitForChild("PlayerPlaceItem")
@@ -233,10 +215,9 @@ end
 -- SAFE MOVE (Real Walk, Anti-Drift, No Anchor -> Bebas Bug 0,0,0)
 -- ==============================================================
 local function SafeMoveTo(targetVec3)
-    local char = LP.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
     local HitboxFolder = workspace:FindFirstChild("Hitbox")
     local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     local mover = MyHitbox or hrp
     
     if not mover then return false end
@@ -283,32 +264,25 @@ local function SafeMoveTo(targetVec3)
     task.wait(0.01)
 end
 
-local function FindEmptyGridNearPlayer(BaseX, BaseY)
-    local offsets = { {x=1, y=0}, {x=-1, y=0}, {x=0, y=1}, {x=0, y=-1}, {x=1, y=1}, {x=-1, y=-1}, {x=1, y=-1}, {x=-1, y=1}, {x=2, y=0}, {x=-2, y=0}, {x=0, y=2}, {x=0, y=-2} }
-    for _, offset in ipairs(offsets) do
-        local checkX = BaseX + offset.x; local checkY = BaseY + offset.y
-        local isFarmTile = false
-        for _, farmOffset in ipairs(getgenv().SelectedTiles) do if (BaseX + farmOffset.x) == checkX and (BaseY + farmOffset.y) == checkY then isFarmTile = true; break end end
-        if not isFarmTile and not CheckDropsAtGrid(checkX, checkY) then return checkX, checkY end
-    end
-    return BaseX, BaseY 
-end
-
 -- ==============================================================
--- MAIN FARM LOOP (KEMBALI KE BASIC YANG PASTI JALAN)
+-- MAIN FARM LOOP (KEMBALI KE BASIC YANG PASTI MUKUL)
 -- ==============================================================
 getgenv().KzoyzFarmLoop = task.spawn(function() 
     while true do 
-        if getgenv().MasterAutoFarm and InventoryMod then 
-            local PosX, PosY = GetPlayerGridPosition()
+        if getgenv().MasterAutoFarm then 
             
-            if PosX and PosY then 
-                local BaseX = math.floor(PosX / getgenv().GridSize + 0.5)
-                local BaseY = math.floor(PosY / getgenv().GridSize + 0.5)
+            local HitboxFolder = workspace:FindFirstChild("Hitbox")
+            local MyHitbox = HitboxFolder and HitboxFolder:FindFirstChild(LP.Name)
+            local ref = MyHitbox or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
+            
+            if ref then 
+                local BaseX = math.floor(ref.Position.X / getgenv().GridSize + 0.5)
+                local BaseY = math.floor(ref.Position.Y / getgenv().GridSize + 0.5)
+                local currZ = ref.Position.Z
                 local ItemIndex 
                 
                 if getgenv().TargetFarmBlock and getgenv().TargetFarmBlock ~= "Auto (Equipped)" then
-                    ItemIndex = GetSlotByItemID(getgenv().TargetFarmBlock) -- PAKE LOGIKA PALING AWAL YG STABIL
+                    ItemIndex = GetSlotByItemID(getgenv().TargetFarmBlock) 
                 else
                     if getgenv().GameInventoryModule and getgenv().GameInventoryModule.GetSelectedHotbarItem then 
                         _, ItemIndex = getgenv().GameInventoryModule.GetSelectedHotbarItem() 
@@ -322,7 +296,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     for _, offset in ipairs(getgenv().SelectedTiles) do 
                         if not getgenv().MasterAutoFarm then break end 
                         local TGrid = Vector2.new(BaseX + offset.x, BaseY + offset.y) 
-                        RemotePlace:FireServer(TGrid, ItemIndex)
+                        pcall(function() RemotePlace:FireServer(TGrid, ItemIndex) end)
                         task.wait(getgenv().ActionDelay) 
                     end
                 end
@@ -332,18 +306,15 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     if not getgenv().MasterAutoFarm then break end 
                     local TGrid = Vector2.new(BaseX + offset.x, BaseY + offset.y) 
                     
-                    -- INI SISTEM BURST NYA (Spam pukulan langsung tanpa nunggu di tengah-tengah)
                     local hits = getgenv().HitCount or 25
                     for hit = 1, hits do 
                         if not getgenv().MasterAutoFarm then break end 
-                        RemoteBreak:FireServer(TGrid)
+                        pcall(function() RemoteBreak:FireServer(TGrid) end)
                     end
-                    
-                    -- Tunggu setelah burst selesai
                     task.wait(getgenv().BreakDelayMs / 1000) 
                 end
                 
-                -- [[ 3. AUTO COLLECT (Sistem gabung) ]]
+                -- [[ 3. AUTO COLLECT ]]
                 task.wait(getgenv().WaitDropMs / 1000) 
                 
                 local TilesToCollect = {}
@@ -353,10 +324,6 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                 end
                 
                 if #TilesToCollect > 0 and getgenv().MasterAutoFarm then
-                    local char = LP.Character
-                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                    local currZ = hrp and hrp.Position.Z or 0
-                    
                     for _, tile in ipairs(TilesToCollect) do
                         if not getgenv().MasterAutoFarm then break end
                         local targetVec = Vector3.new(tile.x * getgenv().GridSize, tile.y * getgenv().GridSize, currZ)
@@ -379,18 +346,10 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     local sapAmount = GetItemAmountByID(getgenv().TargetSaplingName)
                     
                     if sapSlot and sapAmount >= getgenv().SaplingThreshold then
-                        local dropX, dropY
-                        if getgenv().DropTargetX and getgenv().DropTargetY then
-                            dropX = getgenv().DropTargetX; dropY = getgenv().DropTargetY
-                        else
-                            dropX, dropY = FindEmptyGridNearPlayer(BaseX, BaseY)
-                        end
-                        
-                        local char = LP.Character
-                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                        local currZ = hrp and hrp.Position.Z or 0
-                        
+                        local dropX = getgenv().DropTargetX or (BaseX + 1)
+                        local dropY = getgenv().DropTargetY or BaseY
                         local dropVec = Vector3.new(dropX * getgenv().GridSize, dropY * getgenv().GridSize, currZ)
+                        
                         SafeMoveTo(dropVec) 
                         task.wait(0.2)
                         
