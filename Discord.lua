@@ -1,37 +1,38 @@
 local Tab, Window, WindUI = ...
-if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index!") return end
+if type(Tab) ~= "table" then return end
 
 local HttpService = game:GetService("HttpService")
-local InviteCode = "y56q8zuj2r" -- [!] GANTI DENGAN KODE INVITE DISCORD KAMU [!]
-local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
+local InviteCode = "ISI_DENGAN_KODE_INVITE_KAMU" -- Ganti dengan kode invite Discord kamu
 
-local ResponseString = ""
-local success, err = pcall(function()
-    if request then
-        ResponseString = request({
+local Response = nil
+
+pcall(function()
+    local DiscordAPI = "[https://discord.com/api/v10/invites/](https://discord.com/api/v10/invites/)" .. InviteCode .. "?with_counts=true"
+    local ResponseString = ""
+    
+    if type(request) == "function" then
+        local req = request({
             Url = DiscordAPI,
-            Method = "GET",
-            Headers = { ["User-Agent"] = "WindUI", ["Accept"] = "application/json" }
-        }).Body
-    elseif game:HttpGet then
+            Method = "GET"
+        })
+        if req and req.Body then
+            ResponseString = req.Body
+        end
+    elseif type(game.HttpGet) == "function" then
         ResponseString = game:HttpGet(DiscordAPI)
     end
-end)
 
--- Pengecekan Aman (Safe Decode)
-local Response = nil
-if success and type(ResponseString) == "string" and ResponseString ~= "" then
-    pcall(function()
+    if ResponseString and ResponseString ~= "" then
         Response = HttpService:JSONDecode(ResponseString)
-    end)
-end
+    end
+end)
 
 if Response and Response.guild then
     Tab:Section({ Title = "Join our Discord Server!", TextSize = 20 })
     Tab:Paragraph({
         Title = tostring(Response.guild.name),
         Desc = tostring(Response.guild.description or "Mari bergabung dengan komunitas kami!"),
-        Image = "https://cdn.discordapp.com/icons/" .. Response.guild.id .. "/" .. Response.guild.icon .. ".png?size=1024",
+        Image = "[https://cdn.discordapp.com/icons/](https://cdn.discordapp.com/icons/)" .. Response.guild.id .. "/" .. Response.guild.icon .. ".png?size=1024",
         ImageSize = 48,
         Buttons = {
             {
@@ -39,7 +40,7 @@ if Response and Response.guild then
                 Icon = "link",
                 Callback = function()
                     if setclipboard then 
-                        setclipboard("https://discord.gg/" .. InviteCode)
+                        setclipboard("[https://discord.gg/](https://discord.gg/)" .. InviteCode)
                         if WindUI then WindUI:Notify({ Title = "Discord", Content = "Link berhasil disalin ke Clipboard!" }) end
                     end
                 end
@@ -59,7 +60,7 @@ else
                 Icon = "link",
                 Callback = function()
                     if setclipboard then 
-                        setclipboard("https://discord.gg/" .. InviteCode)
+                        setclipboard("[https://discord.gg/](https://discord.gg/)" .. InviteCode)
                         if WindUI then WindUI:Notify({ Title = "Discord", Content = "Link berhasil disalin ke Clipboard!" }) end
                     end
                 end
