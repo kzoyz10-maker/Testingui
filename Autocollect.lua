@@ -160,7 +160,7 @@ local function OpenGrowscanModal()
     local gui = Instance.new("ScreenGui", CoreGui); gui.Name = "KzoyzGrowscan"
     local mainFrame = Instance.new("Frame", gui); mainFrame.Size = UDim2.new(0, 350, 0, 420); mainFrame.Position = UDim2.new(0.5, -175, 0.5, -210); mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35); mainFrame.BorderSizePixel = 0; mainFrame.Active = true; mainFrame.Draggable = true
     
-    local title = Instance.new("TextLabel", mainFrame); title.Size = UDim2.new(1, 0, 0, 35); title.BackgroundColor3 = Color3.fromRGB(20, 20, 20); title.Text = "📊 GROWSCAN MINI"; title.TextColor3 = Color3.fromRGB(255, 215, 0); title.Font = Enum.Font.GothamBold; title.TextSize = 14
+    local title = Instance.new("TextLabel", mainFrame); title.Size = UDim2.new(1, 0, 0, 35); title.BackgroundColor3 = Color3.fromRGB(20, 20, 20); title.Text = "GROWSCAN"; title.TextColor3 = Color3.fromRGB(255, 215, 0); title.Font = Enum.Font.GothamBold; title.TextSize = 14
 
     local closeBtn = Instance.new("TextButton", title); closeBtn.Size = UDim2.new(0, 35, 1, 0); closeBtn.Position = UDim2.new(1, -35, 0, 0); closeBtn.BackgroundTransparency = 1; closeBtn.Text = "X"; closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80); closeBtn.Font = Enum.Font.GothamBold; closeBtn.TextSize = 15
     
@@ -199,17 +199,17 @@ end
 -- ========================================== --
 -- [[ BIKIN UI MENU (WINDUI TABS) ]]
 -- ========================================== --
-local SecScan = Tab:Section({ Title = "📊 Scanner & ESP Settings", Box = true, Opened = true })
+local SecScan = Tab:Section({ Title = "Scanner & ESP", Box = true, Opened = true })
 
 SecScan:Toggle({ 
-    Title = "👁️ SHOW ESP ITEMS & GEMS", 
+    Title = "SHOW ESP ITEMS & GEMS", 
     Flag = "Growscan_Toggle_ESP", 
     Default = getgenv().EnableDropESP, 
     Callback = function(v) getgenv().EnableDropESP = v end 
 })
 
 SecScan:Button({ 
-    Title = "📊 Buka Growscan (Scanner)", 
+    Title = "Growscan (Scanner)", 
     Callback = function() pcall(function() OpenGrowscanModal() end) end 
 })
 
