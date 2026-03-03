@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v20.3 (SMART GLIDE + ULTIMATE UI RESTORE)" 
+getgenv().ScriptVersion = "Auto Farm v20.4 (SMART GLIDE + CONFIG SUPPORT)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -53,7 +53,6 @@ pcall(function() UIManager = require(RS:WaitForChild("Managers"):WaitForChild("U
 local function ForceRestoreGameUI()
     local PG = LP:FindFirstChild("PlayerGui")
     
-    -- 1. Tutup Prompt lewat UIManager & Munculkan HUD
     pcall(function()
         if UIManager then
             if type(UIManager.ClosePrompt) == "function" then UIManager:ClosePrompt() end
@@ -63,7 +62,6 @@ local function ForceRestoreGameUI()
     end)
     
     if PG then
-        -- 2. Matikan frame prompt yang nyangkut (UIPromptUI / UIPrompt)
         pcall(function()
             for _, gui in ipairs(PG:GetDescendants()) do
                 if gui:IsA("Frame") and (gui.Name:lower():match("prompt") or gui.Name:lower():match("dialog")) then 
@@ -72,7 +70,6 @@ local function ForceRestoreGameUI()
             end
         end)
         
-        -- 3. Nyalakan ulang ScreenGui utama yang disembunyikan game
         pcall(function()
             local RestoredUI = {"GemsUI", "InventoryUI", "TouchGui", "TopbarCentered", "TopbarCenteredClipped", "TopbarStandard", "TopbarStandardClipped", "ExperienceChat"}
             for _, name in ipairs(RestoredUI) do 
@@ -82,7 +79,6 @@ local function ForceRestoreGameUI()
         end)
     end
     
-    -- 4. Kembalikan kontrol jalan
     if PlayerMovement then pcall(function() PlayerMovement.InputActive = true end) end
 end
 
@@ -176,6 +172,7 @@ local SecFarm = Tab:Section({ Title = "🚜 Master Auto Farm & Collect", Box = t
 
 SecFarm:Toggle({ 
     Title = "▶ START AUTO FARM & COLLECT", 
+    Flag = "AF_Toggle_Start", 
     Default = getgenv().MasterAutoFarm, 
     Callback = function(v) 
         getgenv().MasterAutoFarm = v 
@@ -184,21 +181,61 @@ SecFarm:Toggle({
 })
 
 local function GetBlockOptions() local opts = {"Auto (Equipped)"}; for _, item in ipairs(ScanAvailableItems()) do table.insert(opts, item) end; return opts end
-local DropFarmBlock = SecFarm:Dropdown({ Title = "🎯 Target Farm Block (ID)", Options = GetBlockOptions(), Default = getgenv().TargetFarmBlock, Callback = function(v) getgenv().TargetFarmBlock = v end })
+local DropFarmBlock = SecFarm:Dropdown({ 
+    Title = "🎯 Target Farm Block (ID)", 
+    Flag = "AF_Drop_TargetBlock",
+    Options = GetBlockOptions(), 
+    Default = getgenv().TargetFarmBlock, 
+    Callback = function(v) getgenv().TargetFarmBlock = v end 
+})
 SecFarm:Button({ Title = "🔄 Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
 SecFarm:Button({ Title = "📝 Select Farm Tiles (Grid Area)", Callback = function() OpenTileSelectorModal() end })
 
 local SecCollect = Tab:Section({ Title = "🧲 Filter Auto Collect", Box = true, Opened = false })
-SecCollect:Toggle({ Title = "Only Collect Sapling (Abaikan drop lain)", Default = getgenv().AutoSaplingMode, Callback = function(v) getgenv().AutoSaplingMode = v end })
+SecCollect:Toggle({ 
+    Title = "Only Collect Sapling (Abaikan drop lain)", 
+    Flag = "AF_Toggle_SaplingMode",
+    Default = getgenv().AutoSaplingMode, 
+    Callback = function(v) getgenv().AutoSaplingMode = v end 
+})
 
 local SecSpeed = Tab:Section({ Title = "⏱️ Delay & Speeds", Box = true, Opened = false })
-SecSpeed:Input({ Title = "Wait Drop Muncul (ms)", Value = tostring(getgenv().WaitDropMs), Placeholder = tostring(getgenv().WaitDropMs), Callback = function(v) getgenv().WaitDropMs = tonumber(v) or getgenv().WaitDropMs end })
-SecSpeed:Input({ Title = "Walk Speed (Kecepatan Collect)", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
-SecSpeed:Input({ Title = "Hit Spam (Jumlah Pukulan)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
+SecSpeed:Input({ 
+    Title = "Wait Drop Muncul (ms)", 
+    Flag = "AF_Input_WaitDrop",
+    Value = tostring(getgenv().WaitDropMs), 
+    Placeholder = tostring(getgenv().WaitDropMs), 
+    Callback = function(v) getgenv().WaitDropMs = tonumber(v) or getgenv().WaitDropMs end 
+})
+SecSpeed:Input({ 
+    Title = "Walk Speed (Kecepatan Collect)", 
+    Flag = "AF_Input_WalkSpeed",
+    Value = tostring(getgenv().WalkSpeed), 
+    Placeholder = tostring(getgenv().WalkSpeed), 
+    Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end 
+})
+SecSpeed:Input({ 
+    Title = "Hit Spam (Jumlah Pukulan)", 
+    Flag = "AF_Input_HitCount",
+    Value = tostring(getgenv().HitCount), 
+    Placeholder = tostring(getgenv().HitCount), 
+    Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end 
+})
 
-local SecSeed = Tab:Section({ Title = "🌱 Auto Drop Seed (Sajjkpling)", Box = true, Opened = false })
-SecSeed:Toggle({ Title = "Enable Auto Drop Sapling", Default = getgenv().AutoDropSapling, Callback = function(v) getgenv().AutoDropSapling = v; if not v then ForceRestoreGameUI() end end })
-SecSeed:Input({ Title = "Drop Threshold (Amount)", Value = tostring(getgenv().SaplingThreshold), Placeholder = tostring(getgenv().SaplingThreshold), Callback = function(v) getgenv().SaplingThreshold = tonumber(v) or getgenv().SaplingThreshold end })
+local SecSeed = Tab:Section({ Title = "🌱 Auto Drop Seed (Sapling)", Box = true, Opened = false })
+SecSeed:Toggle({ 
+    Title = "Enable Auto Drop Sapling", 
+    Flag = "AF_Toggle_AutoDrop",
+    Default = getgenv().AutoDropSapling, 
+    Callback = function(v) getgenv().AutoDropSapling = v; if not v then ForceRestoreGameUI() end end 
+})
+SecSeed:Input({ 
+    Title = "Drop Threshold (Amount)", 
+    Flag = "AF_Input_DropThreshold",
+    Value = tostring(getgenv().SaplingThreshold), 
+    Placeholder = tostring(getgenv().SaplingThreshold), 
+    Callback = function(v) getgenv().SaplingThreshold = tonumber(v) or getgenv().SaplingThreshold end 
+})
 
 SecSeed:Button({ 
     Title = "📍 Set Posisi Drop Seed (Di Sini)", 
@@ -212,7 +249,13 @@ SecSeed:Button({
     end 
 })
 
-local DropSeed = SecSeed:Dropdown({ Title = "Target Drop Seed (ID)", Options = ScanAvailableItems(), Default = getgenv().TargetSaplingName, Callback = function(v) getgenv().TargetSaplingName = v end })
+local DropSeed = SecSeed:Dropdown({ 
+    Title = "Target Drop Seed (ID)", 
+    Flag = "AF_Drop_SeedID",
+    Options = ScanAvailableItems(), 
+    Default = getgenv().TargetSaplingName, 
+    Callback = function(v) getgenv().TargetSaplingName = v end 
+})
 SecSeed:Button({ Title = "🔄 Refresh Seed List", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
 
 -- [[ ========================================================= ]] --
@@ -425,7 +468,7 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     SmartMoveTo(baseVec, currZ) 
                 end
                 
-                -- [[ 4. AUTO DROP (UI RESTORE FIX) ]]
+                -- [[ 4. AUTO DROP ]]
                 if getgenv().AutoDropSapling and getgenv().TargetSaplingName ~= "Kosong" then
                     local sapSlot = GetSlotByItemID(getgenv().TargetSaplingName)
                     local sapAmount = GetItemAmountByID(getgenv().TargetSaplingName)
@@ -457,7 +500,6 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                             task.wait(0.4) 
                         end
                         
-                        -- FIX: Panggil fungsi sakti dari Manager buat bongkar paksa UI-nya
                         ForceRestoreGameUI()
                         task.wait(0.5) 
                         
