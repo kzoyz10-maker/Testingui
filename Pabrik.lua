@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Pabrik v2.6 - HARVEST SWEEP COLLECT & 99999 A-STAR" 
+getgenv().ScriptVersion = "Pabrik v2.7 - HARVEST SWEEP COLLECT & CONFIG SUPPORT" 
 
 -- ========================================== --
 -- [[ DEFAULT SETTINGS (ANTI-RESET) ]]
@@ -129,36 +129,106 @@ local function ScanAvailableItems()
 end
 
 -- ========================================== --
--- [[ WIND UI MAKER DENGAN SISTEM SELIMUT ]]
+-- [[ WIND UI MAKER DENGAN SISTEM SELIMUT & FLAG ]]
 -- ========================================== --
 
-local SecControl = Tab:Section({ Title = "🚀 Smart Pabrik Control", Box = true, Opened = true })
+local SecControl = Tab:Section({ Title = "Pabrik Control", Box = true, Opened = true })
 
-SecControl:Toggle({ Title = "▶ START SMART PABRIK", Default = getgenv().EnablePabrik, Callback = function(v) getgenv().EnablePabrik = v end })
-SecControl:Toggle({ Title = "Auto Collect Sapling (Pas Break)", Default = getgenv().OnlyCollectSapling, Callback = function(v) getgenv().OnlyCollectSapling = v end })
+SecControl:Toggle({ 
+    Title = "Start Pabrik", 
+    Flag = "Pabrik_Toggle_Start",
+    Default = getgenv().EnablePabrik, 
+    Callback = function(v) getgenv().EnablePabrik = v end 
+})
+SecControl:Toggle({ 
+    Title = "Only Collect Sapling", 
+    Flag = "Pabrik_Toggle_CollectSapling",
+    Default = getgenv().OnlyCollectSapling, 
+    Callback = function(v) getgenv().OnlyCollectSapling = v end 
+})
 
-local DropSeed = SecControl:Dropdown({ Title = "🎒 Pilih Seed (Bibit)", Options = ScanAvailableItems(), Default = getgenv().SelectedSeed, Callback = function(v) getgenv().SelectedSeed = v end })
-local DropBlock = SecControl:Dropdown({ Title = "🧱 Pilih Block (Untuk Dihancurkan)", Options = ScanAvailableItems(), Default = getgenv().SelectedBlock, Callback = function(v) getgenv().SelectedBlock = v end })
+local DropSeed = SecControl:Dropdown({ 
+    Title = "Choose Sapling", 
+    Flag = "Pabrik_Drop_Seed",
+    Options = ScanAvailableItems(), 
+    Default = getgenv().SelectedSeed, 
+    Callback = function(v) getgenv().SelectedSeed = v end 
+})
+local DropBlock = SecControl:Dropdown({ 
+    Title = "Choose Block", 
+    Flag = "Pabrik_Drop_Block",
+    Options = ScanAvailableItems(), 
+    Default = getgenv().SelectedBlock, 
+    Callback = function(v) getgenv().SelectedBlock = v end 
+})
 
-SecControl:Button({ Title = "🔄 Refresh Tas Item", Callback = function() pcall(function() local newItems = ScanAvailableItems(); DropSeed:Refresh(newItems); DropBlock:Refresh(newItems) end) end })
+SecControl:Button({ Title = "Refresh Inventory", Callback = function() pcall(function() local newItems = ScanAvailableItems(); DropSeed:Refresh(newItems); DropBlock:Refresh(newItems) end) end })
 
-local SecArea = Tab:Section({ Title = "🗺️ Area Scan Setup (X & Y)", Box = true, Opened = false })
-SecArea:Input({ Title = "Area Start X", Value = tostring(getgenv().PabrikStartX), Placeholder = tostring(getgenv().PabrikStartX), Callback = function(v) getgenv().PabrikStartX = tonumber(v) or getgenv().PabrikStartX end })
-SecArea:Input({ Title = "Area End X", Value = tostring(getgenv().PabrikEndX), Placeholder = tostring(getgenv().PabrikEndX), Callback = function(v) getgenv().PabrikEndX = tonumber(v) or getgenv().PabrikEndX end })
-SecArea:Input({ Title = "Area Start Y", Value = tostring(getgenv().PabrikStartY), Placeholder = tostring(getgenv().PabrikStartY), Callback = function(v) getgenv().PabrikStartY = tonumber(v) or getgenv().PabrikStartY end })
-SecArea:Input({ Title = "Area End Y", Value = tostring(getgenv().PabrikEndY), Placeholder = tostring(getgenv().PabrikEndY), Callback = function(v) getgenv().PabrikEndY = tonumber(v) or getgenv().PabrikEndY end })
+local SecArea = Tab:Section({ Title = "Scan Setup", Box = true, Opened = false })
+SecArea:Input({ 
+    Title = "Area Start X", 
+    Flag = "Pabrik_Input_StartX",
+    Value = tostring(getgenv().PabrikStartX), 
+    Placeholder = tostring(getgenv().PabrikStartX), 
+    Callback = function(v) getgenv().PabrikStartX = tonumber(v) or getgenv().PabrikStartX end 
+})
+SecArea:Input({ 
+    Title = "Area End X", 
+    Flag = "Pabrik_Input_EndX",
+    Value = tostring(getgenv().PabrikEndX), 
+    Placeholder = tostring(getgenv().PabrikEndX), 
+    Callback = function(v) getgenv().PabrikEndX = tonumber(v) or getgenv().PabrikEndX end 
+})
+SecArea:Input({ 
+    Title = "Area Start Y", 
+    Flag = "Pabrik_Input_StartY",
+    Value = tostring(getgenv().PabrikStartY), 
+    Placeholder = tostring(getgenv().PabrikStartY), 
+    Callback = function(v) getgenv().PabrikStartY = tonumber(v) or getgenv().PabrikStartY end 
+})
+SecArea:Input({ 
+    Title = "Area End Y", 
+    Flag = "Pabrik_Input_EndY",
+    Value = tostring(getgenv().PabrikEndY), 
+    Placeholder = tostring(getgenv().PabrikEndY), 
+    Callback = function(v) getgenv().PabrikEndY = tonumber(v) or getgenv().PabrikEndY end 
+})
 
-local SecThresh = Tab:Section({ Title = "⚙️ Threshold Settings (Batas Item)", Box = true, Opened = false })
-SecThresh:Input({ Title = "Block Threshold (Sisa di tas)", Value = tostring(getgenv().BlockThreshold), Placeholder = tostring(getgenv().BlockThreshold), Callback = function(v) getgenv().BlockThreshold = tonumber(v) or getgenv().BlockThreshold end })
-SecThresh:Input({ Title = "Keep Seed Amt (Sisa di tas)", Value = tostring(getgenv().KeepSeedAmt), Placeholder = tostring(getgenv().KeepSeedAmt), Callback = function(v) getgenv().KeepSeedAmt = tonumber(v) or getgenv().KeepSeedAmt end })
+local SecThresh = Tab:Section({ Title = "Threshold Settings", Box = true, Opened = false })
+SecThresh:Input({ 
+    Title = "Block Threshold", 
+    Flag = "Pabrik_Input_BlockThresh",
+    Value = tostring(getgenv().BlockThreshold), 
+    Placeholder = tostring(getgenv().BlockThreshold), 
+    Callback = function(v) getgenv().BlockThreshold = tonumber(v) or getgenv().BlockThreshold end 
+})
+SecThresh:Input({ 
+    Title = "Keep Seed Amt", 
+    Flag = "Pabrik_Input_SeedThresh",
+    Value = tostring(getgenv().KeepSeedAmt), 
+    Placeholder = tostring(getgenv().KeepSeedAmt), 
+    Callback = function(v) getgenv().KeepSeedAmt = tonumber(v) or getgenv().KeepSeedAmt end 
+})
 
-local SecPos = Tab:Section({ Title = "📍 Posisi Break & Drop", Box = true, Opened = false })
+local SecPos = Tab:Section({ Title = "Location Break & Drop", Box = true, Opened = false })
 
-local InpBreakX = SecPos:Input({ Title = "Break Pos X", Value = tostring(getgenv().BreakPosX), Placeholder = tostring(getgenv().BreakPosX), Callback = function(v) getgenv().BreakPosX = tonumber(v) or getgenv().BreakPosX end })
-local InpBreakY = SecPos:Input({ Title = "Break Pos Y", Value = tostring(getgenv().BreakPosY), Placeholder = tostring(getgenv().BreakPosY), Callback = function(v) getgenv().BreakPosY = tonumber(v) or getgenv().BreakPosY end })
+local InpBreakX = SecPos:Input({ 
+    Title = "Break Pos X", 
+    Flag = "Pabrik_Input_BreakX",
+    Value = tostring(getgenv().BreakPosX), 
+    Placeholder = tostring(getgenv().BreakPosX), 
+    Callback = function(v) getgenv().BreakPosX = tonumber(v) or getgenv().BreakPosX end 
+})
+local InpBreakY = SecPos:Input({ 
+    Title = "Break Pos Y", 
+    Flag = "Pabrik_Input_BreakY",
+    Value = tostring(getgenv().BreakPosY), 
+    Placeholder = tostring(getgenv().BreakPosY), 
+    Callback = function(v) getgenv().BreakPosY = tonumber(v) or getgenv().BreakPosY end 
+})
 
 SecPos:Button({
-    Title = "📍 Set Break Pos (Posisi Kamu Saat Ini)",
+    Title = "Set Break Pos",
     Callback = function() 
         local H = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) 
         if H then 
@@ -171,11 +241,23 @@ SecPos:Button({
     end
 })
 
-local InpDropX = SecPos:Input({ Title = "Drop Pos X", Value = tostring(getgenv().DropPosX), Placeholder = tostring(getgenv().DropPosX), Callback = function(v) getgenv().DropPosX = tonumber(v) or getgenv().DropPosX end })
-local InpDropY = SecPos:Input({ Title = "Drop Pos Y", Value = tostring(getgenv().DropPosY), Placeholder = tostring(getgenv().DropPosY), Callback = function(v) getgenv().DropPosY = tonumber(v) or getgenv().DropPosY end })
+local InpDropX = SecPos:Input({ 
+    Title = "Drop Pos X", 
+    Flag = "Pabrik_Input_DropX",
+    Value = tostring(getgenv().DropPosX), 
+    Placeholder = tostring(getgenv().DropPosX), 
+    Callback = function(v) getgenv().DropPosX = tonumber(v) or getgenv().DropPosX end 
+})
+local InpDropY = SecPos:Input({ 
+    Title = "Drop Pos Y", 
+    Flag = "Pabrik_Input_DropY",
+    Value = tostring(getgenv().DropPosY), 
+    Placeholder = tostring(getgenv().DropPosY), 
+    Callback = function(v) getgenv().DropPosY = tonumber(v) or getgenv().DropPosY end 
+})
 
 SecPos:Button({
-    Title = "📍 Set Drop Pos (Posisi Kamu Saat Ini)",
+    Title = "Set Drop Pos",
     Callback = function() 
         local H = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) 
         if H then 
@@ -188,11 +270,35 @@ SecPos:Button({
     end
 })
 
-local SecSpeed = Tab:Section({ Title = "⏱️ Kecepatan & Delay", Box = true, Opened = false })
-SecSpeed:Input({ Title = "Walk Speed", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
-SecSpeed:Input({ Title = "Place Delay (ms)", Value = tostring(getgenv().PlaceDelay), Placeholder = tostring(getgenv().PlaceDelay), Callback = function(v) getgenv().PlaceDelay = tonumber(v) or getgenv().PlaceDelay end })
-SecSpeed:Input({ Title = "Break Delay (ms)", Value = tostring(getgenv().BreakDelay), Placeholder = tostring(getgenv().BreakDelay), Callback = function(v) getgenv().BreakDelay = tonumber(v) or getgenv().BreakDelay end })
-SecSpeed:Input({ Title = "Hit Count (Pukulan per Block)", Value = tostring(getgenv().HitCount), Placeholder = tostring(getgenv().HitCount), Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end })
+local SecSpeed = Tab:Section({ Title = "Speed & Delay", Box = true, Opened = false })
+SecSpeed:Input({ 
+    Title = "Walk Speed", 
+    Flag = "Pabrik_Input_WalkSpeed",
+    Value = tostring(getgenv().WalkSpeed), 
+    Placeholder = tostring(getgenv().WalkSpeed), 
+    Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end 
+})
+SecSpeed:Input({ 
+    Title = "Place Delay (ms)", 
+    Flag = "Pabrik_Input_PlaceDelay",
+    Value = tostring(getgenv().PlaceDelay), 
+    Placeholder = tostring(getgenv().PlaceDelay), 
+    Callback = function(v) getgenv().PlaceDelay = tonumber(v) or getgenv().PlaceDelay end 
+})
+SecSpeed:Input({ 
+    Title = "Break Delay (ms)", 
+    Flag = "Pabrik_Input_BreakDelay",
+    Value = tostring(getgenv().BreakDelay), 
+    Placeholder = tostring(getgenv().BreakDelay), 
+    Callback = function(v) getgenv().BreakDelay = tonumber(v) or getgenv().BreakDelay end 
+})
+SecSpeed:Input({ 
+    Title = "Hit Count Block", 
+    Flag = "Pabrik_Input_HitCount",
+    Value = tostring(getgenv().HitCount), 
+    Placeholder = tostring(getgenv().HitCount), 
+    Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end 
+})
 
 -- ========================================== --
 -- [[ RADAR INVERTED & 99999 A-STAR (SMART GLIDE) ]]
