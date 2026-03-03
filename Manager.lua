@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Manager v3.1 - GLOBAL SMART LOOT" 
+getgenv().ScriptVersion = "Manager v3.2 - GLOBAL SMART LOOT + CONFIG SUPPORT" 
 
 -- ========================================== --
 -- [[ DEFAULT SETTINGS (ANTI-RESET) ]]
@@ -103,52 +103,151 @@ local ManagerRemote = RS:WaitForChild("Managers"):WaitForChild("UIManager"):Wait
 local ChatRemote = RS:WaitForChild("CB")
 
 -- ========================================== --
--- [[ WIND UI SETUP ]]
+-- [[ WIND UI SETUP DENGAN FLAG ]]
 -- ========================================== --
 
 -- SECTION: PLAYER CONTROL & SECURITY
 local SecPlayer = Tab:Section({ Title = "🛡️ Player Control & Security", Box = true, Opened = true })
-SecPlayer:Toggle({ Title = "🧲 Auto Pull Players (World)", Default = getgenv().AutoPull, Callback = function(v) getgenv().AutoPull = v; if not v then ForceRestoreUI() end end })
-SecPlayer:Toggle({ Title = "Auto Ban Players (World)", Default = getgenv().AutoBan, Callback = function(v) getgenv().AutoBan = v; if not v then ForceRestoreUI() end end })
-SecPlayer:Toggle({ Title = "🛡️ Enable Anti-Staff (Auto Disconnect)", Default = getgenv().AntiStaff, Callback = function(v) getgenv().AntiStaff = v end })
+SecPlayer:Toggle({ 
+    Title = "🧲 Auto Pull Players (World)", 
+    Flag = "Mgr_Toggle_AutoPull",
+    Default = getgenv().AutoPull, 
+    Callback = function(v) getgenv().AutoPull = v; if not v then ForceRestoreUI() end end 
+})
+SecPlayer:Toggle({ 
+    Title = "Auto Ban Players (World)", 
+    Flag = "Mgr_Toggle_AutoBan",
+    Default = getgenv().AutoBan, 
+    Callback = function(v) getgenv().AutoBan = v; if not v then ForceRestoreUI() end end 
+})
+SecPlayer:Toggle({ 
+    Title = "🛡️ Enable Anti-Staff (Auto Disconnect)", 
+    Flag = "Mgr_Toggle_AntiStaff",
+    Default = getgenv().AntiStaff, 
+    Callback = function(v) getgenv().AntiStaff = v end 
+})
 
 -- SECTION: CAMERA
 local SecCam = Tab:Section({ Title = "🎥 Camera Custom Zoom", Box = true, Opened = false })
-SecCam:Input({ Title = "Max Zoom Distance", Value = tostring(getgenv().CustomZoom), Placeholder = tostring(getgenv().CustomZoom), Callback = function(v) getgenv().CustomZoom = tonumber(v) or getgenv().CustomZoom end })
+SecCam:Input({ 
+    Title = "Max Zoom Distance", 
+    Flag = "Mgr_Input_Zoom",
+    Value = tostring(getgenv().CustomZoom), 
+    Placeholder = tostring(getgenv().CustomZoom), 
+    Callback = function(v) getgenv().CustomZoom = tonumber(v) or getgenv().CustomZoom end 
+})
 SecCam:Button({
     Title = "Apply Camera Zoom",
     Callback = function() pcall(function() LP.CameraMaxZoomDistance = tonumber(getgenv().CustomZoom) or 1000; LP.CameraMinZoomDistance = 0.5 end) end
 })
 
--- SECTION: AUTO COLLECT (DIRUBAH KE GLOBAL SMART LOOT)
+-- SECTION: AUTO COLLECT (GLOBAL SMART LOOT)
 local SecCollect = Tab:Section({ Title = "🧲 Global Auto Loot Settings", Box = true, Opened = false })
-SecCollect:Toggle({ Title = "▶ Enable Global Auto Collect", Default = getgenv().AutoCollect, Callback = function(v) getgenv().AutoCollect = v end })
-SecCollect:Input({ Title = "Walk / Loot Speed", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
+SecCollect:Toggle({ 
+    Title = "▶ Enable Global Auto Collect", 
+    Flag = "Mgr_Toggle_AutoLoot",
+    Default = getgenv().AutoCollect, 
+    Callback = function(v) getgenv().AutoCollect = v end 
+})
+SecCollect:Input({ 
+    Title = "Walk / Loot Speed", 
+    Flag = "Mgr_Input_LootSpeed",
+    Value = tostring(getgenv().WalkSpeed), 
+    Placeholder = tostring(getgenv().WalkSpeed), 
+    Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end 
+})
 SecCollect:Button({ Title = "🧹 Clear Blacklisted Drops", Callback = function() getgenv().BlacklistedLoot = {} warn("✅ Blacklist Drops Dibersihkan!") end })
 
 -- SECTION: AUTO DROP
 local SecDrop = Tab:Section({ Title = "📦 Auto Drop Settings", Box = true, Opened = false })
-SecDrop:Toggle({ Title = "▶ Enable Auto Drop", Default = getgenv().AutoDrop, Callback = function(v) getgenv().AutoDrop = v; if not v then ForceRestoreUI() end end })
-SecDrop:Input({ Title = "Drop Amount", Value = tostring(getgenv().DropAmount), Placeholder = tostring(getgenv().DropAmount), Callback = function(v) getgenv().DropAmount = tonumber(v) or getgenv().DropAmount end })
-SecDrop:Input({ Title = "Drop Delay (Detik)", Value = tostring(getgenv().DropDelay), Placeholder = tostring(getgenv().DropDelay), Callback = function(v) getgenv().DropDelay = tonumber(v) or getgenv().DropDelay end })
+SecDrop:Toggle({ 
+    Title = "▶ Enable Auto Drop", 
+    Flag = "Mgr_Toggle_AutoDrop",
+    Default = getgenv().AutoDrop, 
+    Callback = function(v) getgenv().AutoDrop = v; if not v then ForceRestoreUI() end end 
+})
+SecDrop:Input({ 
+    Title = "Drop Amount", 
+    Flag = "Mgr_Input_DropAmt",
+    Value = tostring(getgenv().DropAmount), 
+    Placeholder = tostring(getgenv().DropAmount), 
+    Callback = function(v) getgenv().DropAmount = tonumber(v) or getgenv().DropAmount end 
+})
+SecDrop:Input({ 
+    Title = "Drop Delay (Detik)", 
+    Flag = "Mgr_Input_DropDelay",
+    Value = tostring(getgenv().DropDelay), 
+    Placeholder = tostring(getgenv().DropDelay), 
+    Callback = function(v) getgenv().DropDelay = tonumber(v) or getgenv().DropDelay end 
+})
 
 -- SECTION: AUTO TRASH
 local SecTrash = Tab:Section({ Title = "🚮 Auto Trash Settings", Box = true, Opened = false })
-SecTrash:Toggle({ Title = "▶ Enable Auto Trash", Default = getgenv().AutoTrash, Callback = function(v) getgenv().AutoTrash = v; if not v then ForceRestoreUI() end end })
-SecTrash:Input({ Title = "Trash Amount", Value = tostring(getgenv().TrashAmount), Placeholder = tostring(getgenv().TrashAmount), Callback = function(v) getgenv().TrashAmount = tonumber(v) or getgenv().TrashAmount end })
-SecTrash:Input({ Title = "Trash Delay (Detik)", Value = tostring(getgenv().TrashDelay), Placeholder = tostring(getgenv().TrashDelay), Callback = function(v) getgenv().TrashDelay = tonumber(v) or getgenv().TrashDelay end })
+SecTrash:Toggle({ 
+    Title = "▶ Enable Auto Trash", 
+    Flag = "Mgr_Toggle_AutoTrash",
+    Default = getgenv().AutoTrash, 
+    Callback = function(v) getgenv().AutoTrash = v; if not v then ForceRestoreUI() end end 
+})
+SecTrash:Input({ 
+    Title = "Trash Amount", 
+    Flag = "Mgr_Input_TrashAmt",
+    Value = tostring(getgenv().TrashAmount), 
+    Placeholder = tostring(getgenv().TrashAmount), 
+    Callback = function(v) getgenv().TrashAmount = tonumber(v) or getgenv().TrashAmount end 
+})
+SecTrash:Input({ 
+    Title = "Trash Delay (Detik)", 
+    Flag = "Mgr_Input_TrashDelay",
+    Value = tostring(getgenv().TrashDelay), 
+    Placeholder = tostring(getgenv().TrashDelay), 
+    Callback = function(v) getgenv().TrashDelay = tonumber(v) or getgenv().TrashDelay end 
+})
 
 -- SECTION: STREAMER MODE
 local SecStreamer = Tab:Section({ Title = "👁️ Streamer Mode (Spoof Name)", Box = true, Opened = false })
-SecStreamer:Toggle({ Title = "▶ Enable Spoof Name", Default = getgenv().HideName, Callback = function(v) getgenv().HideName = v end })
-SecStreamer:Input({ Title = "Custom Fake Name", Value = tostring(getgenv().FakeNameText), Placeholder = tostring(getgenv().FakeNameText), Callback = function(v) getgenv().FakeNameText = v end })
+SecStreamer:Toggle({ 
+    Title = "▶ Enable Spoof Name", 
+    Flag = "Mgr_Toggle_SpoofName",
+    Default = getgenv().HideName, 
+    Callback = function(v) getgenv().HideName = v end 
+})
+SecStreamer:Input({ 
+    Title = "Custom Fake Name", 
+    Flag = "Mgr_Input_FakeName",
+    Value = tostring(getgenv().FakeNameText), 
+    Placeholder = tostring(getgenv().FakeNameText), 
+    Callback = function(v) getgenv().FakeNameText = v end 
+})
 
 -- SECTION: SPAM CHAT
 local SecChat = Tab:Section({ Title = "💬 Auto Spam Chat Settings", Box = true, Opened = false })
-SecChat:Toggle({ Title = "▶ Enable Auto Chat", Default = getgenv().AutoChat, Callback = function(v) getgenv().AutoChat = v end })
-SecChat:Input({ Title = "Pesan Chat", Value = tostring(getgenv().ChatText), Placeholder = tostring(getgenv().ChatText), Callback = function(v) getgenv().ChatText = v end })
-SecChat:Input({ Title = "Delay (Detik)", Value = tostring(getgenv().ChatDelay), Placeholder = tostring(getgenv().ChatDelay), Callback = function(v) getgenv().ChatDelay = tonumber(v) or getgenv().ChatDelay end })
-SecChat:Toggle({ Title = "Anti Spam (Huruf Random)", Default = getgenv().ChatRandomLetter, Callback = function(v) getgenv().ChatRandomLetter = v end })
+SecChat:Toggle({ 
+    Title = "▶ Enable Auto Chat", 
+    Flag = "Mgr_Toggle_AutoChat",
+    Default = getgenv().AutoChat, 
+    Callback = function(v) getgenv().AutoChat = v end 
+})
+SecChat:Input({ 
+    Title = "Pesan Chat", 
+    Flag = "Mgr_Input_ChatText",
+    Value = tostring(getgenv().ChatText), 
+    Placeholder = tostring(getgenv().ChatText), 
+    Callback = function(v) getgenv().ChatText = v end 
+})
+SecChat:Input({ 
+    Title = "Delay (Detik)", 
+    Flag = "Mgr_Input_ChatDelay",
+    Value = tostring(getgenv().ChatDelay), 
+    Placeholder = tostring(getgenv().ChatDelay), 
+    Callback = function(v) getgenv().ChatDelay = tonumber(v) or getgenv().ChatDelay end 
+})
+SecChat:Toggle({ 
+    Title = "Anti Spam (Huruf Random)", 
+    Flag = "Mgr_Toggle_AntiSpamChat",
+    Default = getgenv().ChatRandomLetter, 
+    Callback = function(v) getgenv().ChatRandomLetter = v end 
+})
 
 -- ========================================== --
 -- [[ PATHFINDING & SMART GLIDE SYSTEM ]]
