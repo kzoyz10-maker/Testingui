@@ -21,7 +21,7 @@ local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footag
 
 local Window = WindUI:CreateWindow({
     Title = "Kzoyz HUB " .. getgenv().HubVersion,
-    Icon = "worlds", 
+    Icon = "swords", 
     Author = "Koziz",
     Folder = "KzoyzHub", 
     Size = UDim2.fromOffset(580, 460),
@@ -73,7 +73,7 @@ AutoLoadTabFromGithub("Pabrik", "factory", "Pabrik (Factory)", "https://raw.gith
 AutoLoadTabFromGithub("Auto Farm", "sprout", "Semi Auto Farm", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Autofarm.lua")
 AutoLoadTabFromGithub("Manager", "briefcase", "Farming Manager", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Manager.lua")
 AutoLoadTabFromGithub("Auto PTHT", "tractor", "Plant & Harvest", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Autoplant.lua")
-AutoLoadTabFromGithub("Auto Collect", "magnet", "Sedot Sampe Peot", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Autocollect.lua")
+AutoLoadTabFromGithub("Growscan", "monitor", "Sedot Sampe Peot", "https://raw.githubusercontent.com/kzoyz10-maker/Testingui/refs/heads/main/Autocollect.lua")
 
 -- ========================================== --
 -- [[ TAB TAMBAHAN: DISCORD & CONFIG ]]
