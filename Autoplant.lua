@@ -99,34 +99,34 @@ end
 -- ========================================== --
 -- [[ BIKIN UI MENU (WIND UI) DENGAN FLAG ]]
 -- ========================================== --
-local SecFarm = Tab:Section({ Title = "🌾 Farm & Plant Logic", Box = true, Opened = true })
+local SecFarm = Tab:Section({ Title = "Plant & Harvest", Box = true, Opened = true })
 
 SecFarm:Toggle({ 
-    Title = "▶ START AUTO HARVEST", 
+    Title = "Start Harvest", 
     Flag = "PTHT_Toggle_Harvest", 
     Default = getgenv().EnableSmartHarvest, 
     Callback = function(v) getgenv().EnableSmartHarvest = v end 
 })
 SecFarm:Toggle({ 
-    Title = "▶ START AUTO PLANT", 
+    Title = "Start Plant", 
     Flag = "PTHT_Toggle_Plant", 
     Default = getgenv().EnableAutoPlant, 
     Callback = function(v) getgenv().EnableAutoPlant = v end 
 })
 
 local DropSeed = SecFarm:Dropdown({ 
-    Title = "🎒 Choose Seed (Bibit)", 
+    Title = "Choose Sapling", 
     Flag = "PTHT_Drop_Seed", 
     Options = ScanAvailableItems(), 
     Default = getgenv().SelectedSeed, 
     Callback = function(v) getgenv().SelectedSeed = v end 
 })
-SecFarm:Button({ Title = "🔄 Refresh Inventory", Callback = function() pcall(function() DropSeed:Refresh(ScanAvailableItems()) end) end })
+SecFarm:Button({ Title = "Refresh Inventory", Callback = function() pcall(function() DropSeed:Refresh(ScanAvailableItems()) end) end })
 
-local SecSpeed = Tab:Section({ Title = "⚡ Speeds & Delays", Box = true, Opened = false })
+local SecSpeed = Tab:Section({ Title = "Speeds & Delays", Box = true, Opened = false })
 
 SecSpeed:Input({ 
-    Title = "Walk Speed (Kecepatan)", 
+    Title = "Walk Speed", 
     Flag = "PTHT_Input_WalkSpeed", 
     Value = tostring(getgenv().WalkSpeed), 
     Placeholder = tostring(getgenv().WalkSpeed), 
