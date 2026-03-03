@@ -1,12 +1,9 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Collect V13 (WINDUI + SMART PATH GLIDE + ANTI 3D)"
-getgenv().EnableAutoCollect = getgenv().EnableAutoCollect or false
+getgenv().ScriptVersion = "Growscan V14 (WINDUI + PURE ESP SCANNER)"
 getgenv().EnableDropESP = getgenv().EnableDropESP or false
 getgenv().GridSize = getgenv().GridSize or 4.5
-getgenv().WalkSpeed = getgenv().WalkSpeed or 25
-getgenv().AIDictionary = getgenv().AIDictionary or {}
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -19,24 +16,21 @@ local RawWorldTiles = require(RS:WaitForChild("WorldTiles"))
 local WorldManager = require(RS:WaitForChild("Managers"):WaitForChild("WorldManager"))
 local ItemsManager = require(RS:WaitForChild("Managers"):WaitForChild("ItemsManager"))
 
-local PlayerMovement
-task.spawn(function() pcall(function() PlayerMovement = require(LP.PlayerScripts:WaitForChild("PlayerMovement")) end) end)
-
 -- ========================================== --
 -- [[ BIKIN UI MENU (WINDUI TABS) ]]
 -- ========================================== --
+local SecScan = Tab:Section({ Title = "📊 Scanner & ESP Settings", Box = true, Opened = true })
 
-
-SecCollect:Toggle({ 
+SecScan:Toggle({ 
     Title = "👁️ SHOW ESP ITEMS & GEMS", 
+    Flag = "Growscan_Toggle_ESP", -- Ditambah Flag biar bisa di-save
     Default = getgenv().EnableDropESP, 
     Callback = function(v) getgenv().EnableDropESP = v end 
 })
 
-
 -- Tombol Open Modal UI
 local OpenGrowscanModal -- Deklarasi dulu
-SecCollect:Button({ 
+SecScan:Button({ 
     Title = "📊 Buka Growscan (Scanner)", 
     Callback = function() pcall(function() OpenGrowscanModal() end) end 
 })
