@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Auto Farm v20.4 (SMART GLIDE + CONFIG SUPPORT)" 
+getgenv().ScriptVersion = "Auto Farm v20.5 (SMART GLIDE + CONFIG SUPPORT)" 
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -20,10 +20,11 @@ getgenv().ActionDelay = getgenv().ActionDelay or 0.15
 getgenv().GridSize = getgenv().GridSize or 4.5 
 
 getgenv().MasterAutoFarm = getgenv().MasterAutoFarm or false
+getgenv().EnableAutoCollect = getgenv().EnableAutoCollect or false -- [!] Opsi baru: Matikan / Nyalakan Collect
 getgenv().AutoSaplingMode = getgenv().AutoSaplingMode or false
-getgenv().HitCount = getgenv().HitCount or 25 
-getgenv().BreakDelayMs = getgenv().BreakDelayMs or 150
-getgenv().WaitDropMs = getgenv().WaitDropMs or 250  
+
+getgenv().HitCount = getgenv().HitCount or 3 
+getgenv().WaitDropMs = getgenv().WaitDropMs or 350  
 getgenv().WalkSpeed = getgenv().WalkSpeed or 25 
 
 getgenv().TargetFarmBlock = getgenv().TargetFarmBlock or "Auto (Equipped)"
@@ -188,10 +189,16 @@ local DropFarmBlock = SecFarm:Dropdown({
     Default = getgenv().TargetFarmBlock, 
     Callback = function(v) getgenv().TargetFarmBlock = v end 
 })
-SecFarm:Button({ Title = "Refresh Inventory", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
+SecFarm:Button({ Title = "Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
 SecFarm:Button({ Title = "Select Farm Tiles", Callback = function() OpenTileSelectorModal() end })
 
-local SecCollect = Tab:Section({ Title = "Filter Auto Collect", Box = true, Opened = false })
+local SecCollect = Tab:Section({ Title = "Auto Collect Settings", Box = true, Opened = false })
+SecCollect:Toggle({ 
+    Title = "Auto Collect", 
+    Flag = "AF_Toggle_EnableCollect",
+    Default = getgenv().EnableAutoCollect, 
+    Callback = function(v) getgenv().EnableAutoCollect = v end 
+})
 SecCollect:Toggle({ 
     Title = "Only Collect Sapling", 
     Flag = "AF_Toggle_SaplingMode",
@@ -238,7 +245,7 @@ SecSeed:Input({
 })
 
 SecSeed:Button({ 
-    Title = "📍 Set Pos Drop Seed", 
+    Title = "Set Pos Drop Sapling", 
     Callback = function() 
         local MyHitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
         if MyHitbox then
@@ -250,13 +257,13 @@ SecSeed:Button({
 })
 
 local DropSeed = SecSeed:Dropdown({ 
-    Title = "Choose Sapling", 
+    Title = "Target Drop Seed (ID)", 
     Flag = "AF_Drop_SeedID",
     Options = ScanAvailableItems(), 
     Default = getgenv().TargetSaplingName, 
     Callback = function(v) getgenv().TargetSaplingName = v end 
 })
-SecSeed:Button({ Title = "Refresh Sapling", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
+SecSeed:Button({ Title = "🔄 Refresh Seed List", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
 
 -- [[ ========================================================= ]] --
 -- [[ PATHFINDING & SMOOTH GLIDE SYSTEM ]]
@@ -395,7 +402,23 @@ local function GetExactDropsInGrid(TargetGridX, TargetGridY)
                 if pos then
                     local dX = math.floor(pos.X / getgenv().GridSize + 0.5)
                     local dY = math.floor(pos.Y / getgenv().GridSize + 0.5)
-                    if dX == TargetGridX and dY == TargetGridY then table.insert(exactPositions, pos) end
+                    if dX == TargetGridX and dY == TargetGridY then
+                        local isSapling = false
+                        if getgenv().AutoSaplingMode then
+                            for _, attrValue in pairs(obj:GetAttributes()) do
+                                if type(attrValue) == "string" and (string.find(string.lower(attrValue), "sapling") or string.find(string.lower(attrValue), "seed")) then isSapling = true; break end
+                            end
+                            if not isSapling then
+                                for _, child in ipairs(obj:GetDescendants()) do
+                                    if child:IsA("StringValue") and (string.find(string.lower(child.Value), "sapling") or string.find(string.lower(child.Value), "seed")) then isSapling = true; break end
+                                end
+                            end
+                        end
+                        
+                        if not getgenv().AutoSaplingMode or (getgenv().AutoSaplingMode and isSapling) then
+                            table.insert(exactPositions, pos) 
+                        end
+                    end
                 end
             end
         end
@@ -452,20 +475,22 @@ getgenv().KzoyzFarmLoop = task.spawn(function()
                     end
                 end
                 
-                -- [[ 3. COLLECT SWEEP ]]
-                task.wait(getgenv().WaitDropMs / 1000) 
-                local ExactDropsToCollect = {}
-                for _, offset in ipairs(getgenv().SelectedTiles) do
-                    local tx = BaseX + offset.x; local ty = BaseY + offset.y
-                    if not IsTileSolid(tx, ty) then 
-                        for _, dropPos in ipairs(GetExactDropsInGrid(tx, ty)) do table.insert(ExactDropsToCollect, dropPos) end
+                -- [[ 3. COLLECT SWEEP (BERDASARKAN TOGGLE) ]]
+                if getgenv().EnableAutoCollect then
+                    task.wait(getgenv().WaitDropMs / 1000) 
+                    local ExactDropsToCollect = {}
+                    for _, offset in ipairs(getgenv().SelectedTiles) do
+                        local tx = BaseX + offset.x; local ty = BaseY + offset.y
+                        if not IsTileSolid(tx, ty) then 
+                            for _, dropPos in ipairs(GetExactDropsInGrid(tx, ty)) do table.insert(ExactDropsToCollect, dropPos) end
+                        end
                     end
-                end
-                
-                if #ExactDropsToCollect > 0 and getgenv().MasterAutoFarm then
-                    SmoothWalkPath(ExactDropsToCollect, currZ)
-                    local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
-                    SmartMoveTo(baseVec, currZ) 
+                    
+                    if #ExactDropsToCollect > 0 and getgenv().MasterAutoFarm then
+                        SmoothWalkPath(ExactDropsToCollect, currZ)
+                        local baseVec = Vector3.new(BaseX * getgenv().GridSize, BaseY * getgenv().GridSize, currZ)
+                        SmartMoveTo(baseVec, currZ) 
+                    end
                 end
                 
                 -- [[ 4. AUTO DROP ]]
