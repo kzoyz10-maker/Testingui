@@ -15,7 +15,7 @@ Tab:Paragraph({
             Icon = "link",
             Callback = function()
                 if setclipboard then 
-                    setclipboard("[https://discord.gg/](https://discord.gg/)" .. InviteCode)
+                    setclipboard("https://discord.gg/" .. InviteCode)
                     if WindUI then 
                         WindUI:Notify({ Title = "Discord", Content = "Link berhasil disalin ke Clipboard!", Icon = "check" }) 
                     end
