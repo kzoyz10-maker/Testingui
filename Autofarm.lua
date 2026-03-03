@@ -168,10 +168,10 @@ end
 -- [[ ========================================================= ]] --
 -- [[ WINDUI SECTIONS ]]
 -- [[ ========================================================= ]] --
-local SecFarm = Tab:Section({ Title = "🚜 Master Auto Farm & Collect", Box = true, Opened = true })
+local SecFarm = Tab:Section({ Title = "Auto Farm", Box = true, Opened = true })
 
 SecFarm:Toggle({ 
-    Title = "▶ START AUTO FARM & COLLECT", 
+    Title = "Start Auto Farm", 
     Flag = "AF_Toggle_Start", 
     Default = getgenv().MasterAutoFarm, 
     Callback = function(v) 
@@ -182,47 +182,47 @@ SecFarm:Toggle({
 
 local function GetBlockOptions() local opts = {"Auto (Equipped)"}; for _, item in ipairs(ScanAvailableItems()) do table.insert(opts, item) end; return opts end
 local DropFarmBlock = SecFarm:Dropdown({ 
-    Title = "🎯 Target Farm Block (ID)", 
+    Title = "Choose Block", 
     Flag = "AF_Drop_TargetBlock",
     Options = GetBlockOptions(), 
     Default = getgenv().TargetFarmBlock, 
     Callback = function(v) getgenv().TargetFarmBlock = v end 
 })
-SecFarm:Button({ Title = "🔄 Refresh Items", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
-SecFarm:Button({ Title = "📝 Select Farm Tiles (Grid Area)", Callback = function() OpenTileSelectorModal() end })
+SecFarm:Button({ Title = "Refresh Inventory", Callback = function() DropFarmBlock:Refresh(GetBlockOptions()) end })
+SecFarm:Button({ Title = "Select Farm Tiles", Callback = function() OpenTileSelectorModal() end })
 
-local SecCollect = Tab:Section({ Title = "🧲 Filter Auto Collect", Box = true, Opened = false })
+local SecCollect = Tab:Section({ Title = "Filter Auto Collect", Box = true, Opened = false })
 SecCollect:Toggle({ 
-    Title = "Only Collect Sapling (Abaikan drop lain)", 
+    Title = "Only Collect Sapling", 
     Flag = "AF_Toggle_SaplingMode",
     Default = getgenv().AutoSaplingMode, 
     Callback = function(v) getgenv().AutoSaplingMode = v end 
 })
 
-local SecSpeed = Tab:Section({ Title = "⏱️ Delay & Speeds", Box = true, Opened = false })
+local SecSpeed = Tab:Section({ Title = "Delay & Speeds", Box = true, Opened = false })
 SecSpeed:Input({ 
-    Title = "Wait Drop Muncul (ms)", 
+    Title = "Wait Drop (ms)", 
     Flag = "AF_Input_WaitDrop",
     Value = tostring(getgenv().WaitDropMs), 
     Placeholder = tostring(getgenv().WaitDropMs), 
     Callback = function(v) getgenv().WaitDropMs = tonumber(v) or getgenv().WaitDropMs end 
 })
 SecSpeed:Input({ 
-    Title = "Walk Speed (Kecepatan Collect)", 
+    Title = "Walk Speed", 
     Flag = "AF_Input_WalkSpeed",
     Value = tostring(getgenv().WalkSpeed), 
     Placeholder = tostring(getgenv().WalkSpeed), 
     Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end 
 })
 SecSpeed:Input({ 
-    Title = "Hit Spam (Jumlah Pukulan)", 
+    Title = "Hit Count Block", 
     Flag = "AF_Input_HitCount",
     Value = tostring(getgenv().HitCount), 
     Placeholder = tostring(getgenv().HitCount), 
     Callback = function(v) getgenv().HitCount = tonumber(v) or getgenv().HitCount end 
 })
 
-local SecSeed = Tab:Section({ Title = "🌱 Auto Drop Seed (Sapling)", Box = true, Opened = false })
+local SecSeed = Tab:Section({ Title = "Auto Drop Sapling", Box = true, Opened = false })
 SecSeed:Toggle({ 
     Title = "Enable Auto Drop Sapling", 
     Flag = "AF_Toggle_AutoDrop",
@@ -238,7 +238,7 @@ SecSeed:Input({
 })
 
 SecSeed:Button({ 
-    Title = "📍 Set Posisi Drop Seed (Di Sini)", 
+    Title = "📍 Set Pos Drop Seed", 
     Callback = function() 
         local MyHitbox = workspace:FindFirstChild("Hitbox") and workspace.Hitbox:FindFirstChild(LP.Name) or (LP.Character and LP.Character:FindFirstChild("HumanoidRootPart"))
         if MyHitbox then
@@ -250,13 +250,13 @@ SecSeed:Button({
 })
 
 local DropSeed = SecSeed:Dropdown({ 
-    Title = "Target Drop Seed (ID)", 
+    Title = "Choose Sapling", 
     Flag = "AF_Drop_SeedID",
     Options = ScanAvailableItems(), 
     Default = getgenv().TargetSaplingName, 
     Callback = function(v) getgenv().TargetSaplingName = v end 
 })
-SecSeed:Button({ Title = "🔄 Refresh Seed List", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
+SecSeed:Button({ Title = "Refresh Sapling", Callback = function() DropSeed:Refresh(ScanAvailableItems()) end })
 
 -- [[ ========================================================= ]] --
 -- [[ PATHFINDING & SMOOTH GLIDE SYSTEM ]]
