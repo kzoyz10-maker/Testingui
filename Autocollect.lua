@@ -1,7 +1,7 @@
 local Tab = ...
 if type(Tab) ~= "table" then warn("Module harus di-load dari Kzoyz Index (WindUI)!") return end
 
-getgenv().ScriptVersion = "Growscan V14 (WINDUI + PURE ESP SCANNER)"
+getgenv().ScriptVersion = "Growscan V15 (WINDUI + BULLETPROOF ESP)"
 getgenv().EnableDropESP = getgenv().EnableDropESP or false
 getgenv().GridSize = getgenv().GridSize or 4.5
 
@@ -17,26 +17,7 @@ local WorldManager = require(RS:WaitForChild("Managers"):WaitForChild("WorldMana
 local ItemsManager = require(RS:WaitForChild("Managers"):WaitForChild("ItemsManager"))
 
 -- ========================================== --
--- [[ BIKIN UI MENU (WINDUI TABS) ]]
--- ========================================== --
-local SecScan = Tab:Section({ Title = "📊 Scanner & ESP Settings", Box = true, Opened = true })
-
-SecScan:Toggle({ 
-    Title = "👁️ SHOW ESP ITEMS & GEMS", 
-    Flag = "Growscan_Toggle_ESP", -- Ditambah Flag biar bisa di-save
-    Default = getgenv().EnableDropESP, 
-    Callback = function(v) getgenv().EnableDropESP = v end 
-})
-
--- Tombol Open Modal UI
-local OpenGrowscanModal -- Deklarasi dulu
-SecScan:Button({ 
-    Title = "📊 Buka Growscan (Scanner)", 
-    Callback = function() pcall(function() OpenGrowscanModal() end) end 
-})
-
--- ========================================== --
--- [[ HELPER: NAMA & STACK SIZE (JUMLAH ISI) ]]
+-- [[ HELPER: FUNGSI-FUNGSI LOGIKA (DITARUH ATAS BIAR AMAN) ]]
 -- ========================================== --
 local function GetItemDetails(item)
     local realName = nil
@@ -74,9 +55,6 @@ local function GetItemDetails(item)
     return realName, stackAmount
 end
 
--- ========================================== --
--- [[ GROWSCAN MODAL (UKURAN DIPERKECIL) ]]
--- ========================================== --
 local function FormatCoords(coordsTable)
     if #coordsTable == 0 then return "-" end
     if #coordsTable > 8 then
@@ -176,11 +154,10 @@ local function RenderGrowscanContent(scrollTanaman, scrollDrops)
     scrollDrops.CanvasSize = UDim2.new(0, 0, 0, totalY_Drops)
 end
 
-function OpenGrowscanModal()
+local function OpenGrowscanModal()
     if CoreGui:FindFirstChild("KzoyzGrowscan") then CoreGui.KzoyzGrowscan:Destroy() end
 
     local gui = Instance.new("ScreenGui", CoreGui); gui.Name = "KzoyzGrowscan"
-    -- RESIZE: Diperkecil jadi 350 x 420
     local mainFrame = Instance.new("Frame", gui); mainFrame.Size = UDim2.new(0, 350, 0, 420); mainFrame.Position = UDim2.new(0.5, -175, 0.5, -210); mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35); mainFrame.BorderSizePixel = 0; mainFrame.Active = true; mainFrame.Draggable = true
     
     local title = Instance.new("TextLabel", mainFrame); title.Size = UDim2.new(1, 0, 0, 35); title.BackgroundColor3 = Color3.fromRGB(20, 20, 20); title.Text = "📊 GROWSCAN MINI"; title.TextColor3 = Color3.fromRGB(255, 215, 0); title.Font = Enum.Font.GothamBold; title.TextSize = 14
@@ -218,6 +195,23 @@ function OpenGrowscanModal()
         end
     end)
 end
+
+-- ========================================== --
+-- [[ BIKIN UI MENU (WINDUI TABS) ]]
+-- ========================================== --
+local SecScan = Tab:Section({ Title = "📊 Scanner & ESP Settings", Box = true, Opened = true })
+
+SecScan:Toggle({ 
+    Title = "👁️ SHOW ESP ITEMS & GEMS", 
+    Flag = "Growscan_Toggle_ESP", 
+    Default = getgenv().EnableDropESP, 
+    Callback = function(v) getgenv().EnableDropESP = v end 
+})
+
+SecScan:Button({ 
+    Title = "📊 Buka Growscan (Scanner)", 
+    Callback = function() pcall(function() OpenGrowscanModal() end) end 
+})
 
 -- ========================================== --
 -- [[ TRACER ESP LOGIC ]]
