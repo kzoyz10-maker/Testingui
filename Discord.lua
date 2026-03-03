@@ -5,8 +5,8 @@ local HttpService = game:GetService("HttpService")
 local InviteCode = "y56q8zuj2r" -- [!] GANTI DENGAN KODE INVITE DISCORD KAMU [!]
 local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
 
-local ResponseString = "{}"
-pcall(function()
+local ResponseString = ""
+local success, err = pcall(function()
     if request then
         ResponseString = request({
             Url = DiscordAPI,
@@ -18,7 +18,13 @@ pcall(function()
     end
 end)
 
-local Response = HttpService:JSONDecode(ResponseString)
+-- Pengecekan Aman (Safe Decode)
+local Response = nil
+if success and type(ResponseString) == "string" and ResponseString ~= "" then
+    pcall(function()
+        Response = HttpService:JSONDecode(ResponseString)
+    end)
+end
 
 if Response and Response.guild then
     Tab:Section({ Title = "Join our Discord Server!", TextSize = 20 })
