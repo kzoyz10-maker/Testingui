@@ -97,20 +97,55 @@ local function GetSlotByItemName(targetName)
 end
 
 -- ========================================== --
--- [[ BIKIN UI MENU (WIND UI) ]]
+-- [[ BIKIN UI MENU (WIND UI) DENGAN FLAG ]]
 -- ========================================== --
 local SecFarm = Tab:Section({ Title = "🌾 Farm & Plant Logic", Box = true, Opened = true })
 
-SecFarm:Toggle({ Title = "▶ START AUTO HARVEST", Default = getgenv().EnableSmartHarvest, Callback = function(v) getgenv().EnableSmartHarvest = v end })
-SecFarm:Toggle({ Title = "▶ START AUTO PLANT", Default = getgenv().EnableAutoPlant, Callback = function(v) getgenv().EnableAutoPlant = v end })
+SecFarm:Toggle({ 
+    Title = "▶ START AUTO HARVEST", 
+    Flag = "PTHT_Toggle_Harvest", 
+    Default = getgenv().EnableSmartHarvest, 
+    Callback = function(v) getgenv().EnableSmartHarvest = v end 
+})
+SecFarm:Toggle({ 
+    Title = "▶ START AUTO PLANT", 
+    Flag = "PTHT_Toggle_Plant", 
+    Default = getgenv().EnableAutoPlant, 
+    Callback = function(v) getgenv().EnableAutoPlant = v end 
+})
 
-local DropSeed = SecFarm:Dropdown({ Title = "🎒 Choose Seed (Bibit)", Options = ScanAvailableItems(), Default = getgenv().SelectedSeed, Callback = function(v) getgenv().SelectedSeed = v end })
+local DropSeed = SecFarm:Dropdown({ 
+    Title = "🎒 Choose Seed (Bibit)", 
+    Flag = "PTHT_Drop_Seed", 
+    Options = ScanAvailableItems(), 
+    Default = getgenv().SelectedSeed, 
+    Callback = function(v) getgenv().SelectedSeed = v end 
+})
 SecFarm:Button({ Title = "🔄 Refresh Inventory", Callback = function() pcall(function() DropSeed:Refresh(ScanAvailableItems()) end) end })
 
 local SecSpeed = Tab:Section({ Title = "⚡ Speeds & Delays", Box = true, Opened = false })
-SecSpeed:Input({ Title = "Walk Speed (Kecepatan)", Value = tostring(getgenv().WalkSpeed), Placeholder = tostring(getgenv().WalkSpeed), Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end })
-SecSpeed:Input({ Title = "Harvest Break Delay (ms)", Value = tostring(getgenv().BreakDelay), Placeholder = tostring(getgenv().BreakDelay), Callback = function(v) getgenv().BreakDelay = tonumber(v) or getgenv().BreakDelay end })
-SecSpeed:Input({ Title = "Plant Delay (ms)", Value = tostring(getgenv().PlantDelay), Placeholder = tostring(getgenv().PlantDelay), Callback = function(v) getgenv().PlantDelay = tonumber(v) or getgenv().PlantDelay end })
+
+SecSpeed:Input({ 
+    Title = "Walk Speed (Kecepatan)", 
+    Flag = "PTHT_Input_WalkSpeed", 
+    Value = tostring(getgenv().WalkSpeed), 
+    Placeholder = tostring(getgenv().WalkSpeed), 
+    Callback = function(v) getgenv().WalkSpeed = tonumber(v) or getgenv().WalkSpeed end 
+})
+SecSpeed:Input({ 
+    Title = "Harvest Break Delay (ms)", 
+    Flag = "PTHT_Input_BreakDelay", 
+    Value = tostring(getgenv().BreakDelay), 
+    Placeholder = tostring(getgenv().BreakDelay), 
+    Callback = function(v) getgenv().BreakDelay = tonumber(v) or getgenv().BreakDelay end 
+})
+SecSpeed:Input({ 
+    Title = "Plant Delay (ms)", 
+    Flag = "PTHT_Input_PlantDelay", 
+    Value = tostring(getgenv().PlantDelay), 
+    Placeholder = tostring(getgenv().PlantDelay), 
+    Callback = function(v) getgenv().PlantDelay = tonumber(v) or getgenv().PlantDelay end 
+})
 
 -- ========================================== --
 -- [[ RADAR INVERTED & 99999 A-STAR (SMART GLIDE) ]]
