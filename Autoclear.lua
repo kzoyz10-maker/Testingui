@@ -228,7 +228,7 @@ end
 -- ========================================== --
 -- [[ UI SECTION ]]
 -- ========================================== --
-local SecClear = Tab:Section({ Title = "🧨 Auto Clear (V8 A* Smart Walk)", Box = true, Opened = true })
+local SecClear = Tab:Section({ Title = "Auto Clear", Box = true, Opened = true })
 
 SecClear:Toggle({ 
     Title = "▶ START AUTO CLEAR", 
