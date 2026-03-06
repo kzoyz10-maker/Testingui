@@ -260,7 +260,7 @@ end
 -- ========================================== --
 -- [[ UI SECTION ]]
 -- ========================================== --
-local SecBuild = Tab:Section({ Title = "🏗️ Auto Make Farm (V4 Anti Freeze)", Box = true, Opened = true })
+local SecBuild = Tab:Section({ Title = "Auto Make Farm/Splice Sapling", Box = true, Opened = true })
 
 SecBuild:Toggle({ 
     Title = "▶ START AUTO BUILD", 
@@ -272,7 +272,7 @@ SecBuild:Toggle({
 })
 
 local DropBlock = SecBuild:Dropdown({ 
-    Title = "🧱 Pilih Block Farm (Tanah/Platform)", 
+    Title = "Choose Block Farm", 
     Options = ScanAvailableItems(), 
     Default = getgenv().BuildSelectedBlock, 
     Callback = function(v) getgenv().BuildSelectedBlock = v end 
