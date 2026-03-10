@@ -20,9 +20,9 @@ end
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "Kzoyz HUB " .. getgenv().HubVersion,
+    Title = "Kzoyz HUB FREE SCRIPT" .. getgenv().HubVersion,
     Icon = "globe", 
-    Author = "Koziz",
+    Author = "FREE SCRIPT DO NOT SELL THIS SCRIPT!",
     Folder = "KzoyzHub", 
     Size = UDim2.fromOffset(580, 460),
     Transparent = true,
